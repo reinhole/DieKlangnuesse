@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Die Klangnüsse 🐿️🌰</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="game">
+    <header class="hud">
+      <h1 class="title">Die Klangnüsse</h1>
+      <div class="status-line">
+        Status: <span data-testid="game-status">Ready</span>
+      </div>
+      <div class="stats">
+        <span class="stat">🌰 Score: <span data-testid="score">0</span></span>
+        <span class="stat">❤️ Lives: <span data-testid="lives">3</span></span>
+        <span class="stat">🌲 Level: <span data-testid="level">1</span></span>
+        <span class="stat">🥜 Left: <span data-testid="nut-count">0</span></span>
+      </div>
+    </header>
+
+    <div class="stage">
+      <canvas
+        id="game-canvas"
+        data-testid="game-canvas"
+        width="480"
+        height="640"
+      ></canvas>
+    </div>
+
+    <section class="controls">
+      <div class="row primary">
+        <button data-testid="btn-start" class="btn btn-start">Start</button>
+        <button data-testid="btn-pause" class="btn btn-pause" disabled>Pause</button>
+        <button data-testid="btn-reset" class="btn btn-reset">Reset</button>
+      </div>
+
+      <div class="row volume">
+        <label class="vol-label" for="volume-slider">📢 Volume (lauter = schneller, ganz laut = Sprung)</label>
+        <input
+          id="volume-slider"
+          data-testid="volume-input"
+          type="range"
+          min="0"
+          max="100"
+          value="0"
+        />
+        <div class="meter">
+          <div id="volume-bar"></div>
+          <span class="meter-num"><span data-testid="volume-meter">0</span>%</span>
+        </div>
+        <button data-testid="btn-mic" class="btn btn-mic">🎤 Enable mic</button>
+      </div>
+
+      <div class="row dpad">
+        <button data-testid="btn-left" class="btn btn-dpad">◄ Left</button>
+        <button data-testid="btn-jump" class="btn btn-dpad btn-jump">⤒ Jump</button>
+        <button data-testid="btn-right" class="btn btn-dpad">Right ►</button>
+      </div>
+
+      <p class="hint">
+        Halte <kbd>◄</kbd>/<kbd>►</kbd> (oder die Pfeiltasten) für die Richtung,
+        sei laut zum Beschleunigen, schrei für einen Sprung.
+      </p>
+    </section>
+
+    <!-- Hidden state mirror: the DOM is the source of truth tests read. -->
+    <div class="state-mirror" aria-hidden="true">
+      <span data-testid="player"></span>
+      <span data-testid="nuts"></span>
+    </div>
+  </div>
+
+  <script src="rng.js"></script>
+  <script src="input.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

@@ -3,10 +3,14 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "playwright test"
   },
   "engines": {
     "node": ">=24.0.0"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
 }
