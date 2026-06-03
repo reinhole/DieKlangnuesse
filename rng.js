@@ -26,7 +26,8 @@ class SeededRNG {
 
 // One global, seedable instance. Default seed is time-based for normal play;
 // tests call window.__setSeed(n) before starting for deterministic worlds.
-const globalRNG = new SeededRNG(Date.now());
+const initialSeed = (typeof window !== 'undefined' && window.__initialSeed !== undefined) ? window.__initialSeed : Date.now();
+const globalRNG = new SeededRNG(initialSeed);
 
 window.__rng = globalRNG;
 window.__setSeed = (seed) => globalRNG.setSeed(seed);

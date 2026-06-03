@@ -119,7 +119,7 @@
     followOffset: 200, // keep the squirrel this far above the screen bottom (in world units)
   };
 
-  window.__config = Object.assign({}, DEFAULTS);
+  window.__config = Object.assign({}, DEFAULTS, window.__initialConfig || {});
   // __testMode is OFF by default so real users (and any external Playwright
   // grader that doesn't know about __step) get a live, self-running game.
   // Our own deterministic tests opt in explicitly via window.__testMode = true.
@@ -165,9 +165,7 @@
   function updateButtons() {
     const running = state === "Running";
     const paused = state === "Paused";
-    const start = $("btn-start");
     const pause = $("btn-pause");
-    if (start) start.disabled = running || paused;
     if (pause) {
       pause.disabled = !(running || paused);
       pause.textContent = paused ? "Resume" : "Pause";
@@ -748,16 +746,6 @@
   }
 
   // --- Controls -----------------------------------------------------------
-  function onStart() {
-    if (state === "Ready" || state === "Game Over") {
-      newGame();
-      setState("Running");
-      audio.playBGM();
-    } else if (state === "Paused") {
-      setState("Running");
-      audio.playBGM();
-    }
-  }
   function onPause() {
     if (state === "Running") {
       setState("Paused");
@@ -769,8 +757,10 @@
   }
   function onReset() {
     newGame();
-    setState("Ready");
-    audio.stopBGM();
+    setState("Running");
+    if (!window.__testMode) {
+      audio.playBGM();
+    }
   }
 
   function init() {
@@ -781,13 +771,15 @@
     audio.init();
     loadSprites();
 
-    $("btn-start").addEventListener("click", onStart);
     $("btn-pause").addEventListener("click", onPause);
     $("btn-reset").addEventListener("click", onReset);
     $("btn-mute").addEventListener("click", () => audio.toggleMute());
 
     newGame();
-    setState("Ready");
+    setState("Running");
+    if (!window.__testMode) {
+      audio.playBGM();
+    }
     requestAnimationFrame(loop);
 
     // Test/debug hooks.

@@ -11,16 +11,15 @@ const { test, expect } = require('@playwright/test');
 
 // Boot the page, seed it, apply config, then Start the run.
 async function boot(page, { seed = 1234, config = {} } = {}) {
-  await page.goto('/');
-  await page.evaluate(
+  await page.addInitScript(
     ({ seed, config }) => {
       window.__testMode = true;
-      window.__setSeed(seed);
-      Object.assign(window.__config, config);
+      window.__initialSeed = seed;
+      window.__initialConfig = config;
     },
     { seed, config }
   );
-  await page.getByTestId('btn-start').click();
+  await page.goto('/');
   await expect(page.getByTestId('game-status')).toHaveText('Running');
 }
 
@@ -30,18 +29,17 @@ const setDirection = (page, d) => page.evaluate((d) => window.__setDirection(d),
 const playerY = async (page) =>
   Number(await page.getByTestId('player').getAttribute('data-y'));
 
-test('loads in Ready with pause disabled', async ({ page }) => {
+test('loads in Running with pause enabled', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByTestId('game-status')).toHaveText('Ready');
-  await expect(page.getByTestId('btn-pause')).toBeDisabled();
+  await expect(page.getByTestId('game-status')).toHaveText('Running');
+  await expect(page.getByTestId('btn-pause')).toBeEnabled();
   await expect(page.getByTestId('score')).toHaveText('0');
   await expect(page.getByTestId('lives')).toHaveText('3');
   await expect(page.getByTestId('level')).toHaveText('1');
 });
 
-test('Start transitions to Running and toggles button availability', async ({ page }) => {
+test('Pause is enabled when running', async ({ page }) => {
   await boot(page);
-  await expect(page.getByTestId('btn-start')).toBeDisabled();
   await expect(page.getByTestId('btn-pause')).toBeEnabled();
 });
 
@@ -117,12 +115,11 @@ test('the same seed produces the same world', async ({ page }) => {
 
 test('the live (real-time) loop drives physics without __step', async ({ page }) => {
   // Explicitly DISABLE test mode so the requestAnimationFrame accumulator runs.
-  await page.goto('/');
-  await page.evaluate(() => {
+  await page.addInitScript(() => {
     window.__testMode = false;
-    window.__setSeed(99);
+    window.__initialSeed = 99;
   });
-  await page.getByTestId('btn-start').click();
+  await page.goto('/');
   await expect(page.getByTestId('game-status')).toHaveText('Running');
 
   const before = await playerY(page);
@@ -132,14 +129,14 @@ test('the live (real-time) loop drives physics without __step', async ({ page })
   expect(await playerY(page)).toBeGreaterThan(before);
 });
 
-test('Reset returns to Ready and clears stats', async ({ page }) => {
+test('Reset returns to Running and clears stats', async ({ page }) => {
   await boot(page, { config: { branchOffsetX: 0 } });
   await setVolume(page, 1);
   await step(page, 40);
   await expect(page.getByTestId('score')).toHaveText('1');
 
   await page.getByTestId('btn-reset').click();
-  await expect(page.getByTestId('game-status')).toHaveText('Ready');
+  await expect(page.getByTestId('game-status')).toHaveText('Running');
   await expect(page.getByTestId('score')).toHaveText('0');
   await expect(page.getByTestId('lives')).toHaveText('3');
   await expect(page.getByTestId('level')).toHaveText('1');
