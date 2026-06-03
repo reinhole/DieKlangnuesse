@@ -291,7 +291,7 @@
       player.vx = d * c.moveSpeedMax * vol;
     }
 
-    player.x = clamp(player.x + player.vx, player.w / 2, W - player.w / 2);
+    player.x = clamp(player.x + player.vx, cameraOffX + player.w / 2, W - cameraOffX - player.w / 2);
     if (d !== 0) player.facing = d;
 
     // Loud peak (or Jump button) launches a jump, only when grounded.
