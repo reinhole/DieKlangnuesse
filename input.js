@@ -23,6 +23,7 @@
   let leftHeld = false;
   let rightHeld = false;
   let jumpQueued = false; // one-shot from the Jump button / key / __queueJump
+  let jumpHeld = false;
 
   // --- Mic state ----------------------------------------------------------
   let micActive = false;
@@ -152,7 +153,12 @@
       jumpBtn.addEventListener("pointerdown", (e) => {
         e.preventDefault();
         jumpQueued = true;
+        jumpHeld = true;
       });
+      const releaseJump = () => { jumpHeld = false; };
+      jumpBtn.addEventListener("pointerup", releaseJump);
+      jumpBtn.addEventListener("pointerleave", releaseJump);
+      jumpBtn.addEventListener("pointercancel", releaseJump);
     }
 
     const micBtn = $("btn-mic");
@@ -161,10 +167,15 @@
     window.addEventListener("keydown", (e) => {
       if (e.key === "ArrowLeft") leftHeld = true;
       else if (e.key === "ArrowRight") rightHeld = true;
+      else if (e.key === " " || e.key === "ArrowUp") {
+        jumpQueued = true;
+        jumpHeld = true;
+      }
     });
     window.addEventListener("keyup", (e) => {
       if (e.key === "ArrowLeft") leftHeld = false;
       else if (e.key === "ArrowRight") rightHeld = false;
+      else if (e.key === " " || e.key === "ArrowUp") jumpHeld = false;
     });
 
     updateMeter();
@@ -182,7 +193,9 @@
     jumpQueued = true;
   };
 
-  window.Input = { getVolume, getDirection, consumeJump, enableMic, updateMeter, lastJumpInfo: { source: null, volume: 0 } };
+  const isJumpHeld = () => jumpHeld || getVolume() >= jumpThreshold();
+
+  window.Input = { getVolume, getDirection, consumeJump, isJumpHeld, enableMic, updateMeter, lastJumpInfo: { source: null, volume: 0 } };
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", bind);

@@ -511,7 +511,6 @@
   }
 
   // --- Sprite assets ---------------------------------------------------------
-  const ASSET_BASE = '/Sunny-land-woods-files/Assets';
   const imgs = {};
 
   function loadImg(key, path) {
