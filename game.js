@@ -209,21 +209,36 @@
         const branchWidth = type === 3 ? 100 : 133;
         let bx, pointsRight;
 
-        let borderShift = type === 3 ? 20 : 45;
-        let trunkOffset = type === 3 ? c.branchOffsetX : c.branchOffsetX - 25;
-
-        if (opt === 1) { // Left wall -> inside
-          bx = cameraOffX - borderShift;
-          pointsRight = true;
-        } else if (opt === 2) { // Trunk -> left
-          bx = W / 2 - trunkOffset - branchWidth / 2;
-          pointsRight = false;
-        } else if (opt === 3) { // Trunk -> right
-          bx = W / 2 + trunkOffset - branchWidth / 2;
-          pointsRight = true;
-        } else { // Right wall -> inside
-          bx = W - cameraOffX - branchWidth + borderShift;
-          pointsRight = false;
+        if (type === 3) {
+          // Green leafy branch
+          if (opt === 1) { // Left wall
+            bx = cameraOffX - 20;
+            pointsRight = true;
+          } else if (opt === 2) { // Trunk left
+            bx = W / 2 - c.branchOffsetX - branchWidth / 2;
+            pointsRight = false;
+          } else if (opt === 3) { // Trunk right
+            bx = W / 2 + c.branchOffsetX - branchWidth / 2;
+            pointsRight = true;
+          } else { // Right wall
+            bx = W - cameraOffX - branchWidth + 20;
+            pointsRight = false;
+          }
+        } else {
+          // Dark bare branch
+          if (opt === 1) { // Left wall (moved further to border)
+            bx = cameraOffX - 45;
+            pointsRight = false; // Flipped because asset base is on the right
+          } else if (opt === 2) { // Trunk left (moved closer to middle)
+            bx = W / 2 - c.branchOffsetX - branchWidth / 2 + 20;
+            pointsRight = true;  // Not flipped, base stays on the right
+          } else if (opt === 3) { // Trunk right (moved closer to middle)
+            bx = W / 2 + c.branchOffsetX - branchWidth / 2 - 20;
+            pointsRight = false; // Flipped, base moves to the left
+          } else { // Right wall (moved further to border)
+            bx = W - cameraOffX - branchWidth + 45;
+            pointsRight = true;  // Not flipped, base stays on the right
+          }
         }
 
         const branch = { x: bx, w: branchWidth, top: top, type: type, pointsRight: pointsRight };
