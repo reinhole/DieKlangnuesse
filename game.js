@@ -21,11 +21,11 @@
 
   const ASSET_BASE = '/Sunny-land-woods-files/Assets';
   const SOUND_PATHS = {
-    bgm: '/Demo/assets/sounds/the_valley.ogg',
-    jump: '/Demo/assets/sounds/jump.ogg',
-    item: '/Demo/assets/sounds/item.ogg',
-    hurt: '/Demo/assets/sounds/hurt.ogg',
-    enemyDeath: '/Demo/assets/sounds/enemy-death.ogg',
+    bgm: '/Demo/assets/sounds/the_valley.m4a',
+    jump: '/Demo/assets/sounds/jump.m4a',
+    item: '/Demo/assets/sounds/item.m4a',
+    hurt: '/Demo/assets/sounds/hurt.m4a',
+    enemyDeath: '/Demo/assets/sounds/enemy-death.m4a',
   };
 
   class AudioController {
@@ -33,6 +33,7 @@
       this.muted = false;
       this.bgm = null;
       this.sounds = {};
+      this.autoplayHandlerAdded = false;
     }
 
     init() {
@@ -62,7 +63,22 @@
 
     playBGM() {
       if (!this.bgm) return;
-      this.bgm.play().catch(() => {});
+      this.bgm.play().catch(() => {
+        if (this.autoplayHandlerAdded) return;
+        this.autoplayHandlerAdded = true;
+        const startOnInteraction = () => {
+          if (this.bgm && !this.muted && this.bgm.paused) {
+            this.bgm.play().catch(() => {});
+          }
+          window.removeEventListener('click', startOnInteraction);
+          window.removeEventListener('keydown', startOnInteraction);
+          window.removeEventListener('touchstart', startOnInteraction);
+          this.autoplayHandlerAdded = false;
+        };
+        window.addEventListener('click', startOnInteraction);
+        window.addEventListener('keydown', startOnInteraction);
+        window.addEventListener('touchstart', startOnInteraction);
+      });
     }
 
     stopBGM() {
