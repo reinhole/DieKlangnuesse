@@ -613,7 +613,7 @@
   
   const imgs = new Proxy(baseImgs, {
     get(target, prop) {
-      if (game.score >= 30 && winterImgs[prop] && winterImgs[prop].complete && winterImgs[prop].naturalWidth) {
+      if (game.level >= 2 && winterImgs[prop] && winterImgs[prop].complete && winterImgs[prop].naturalWidth) {
         return winterImgs[prop];
       }
       return target[prop];
@@ -695,12 +695,12 @@
     ctx.fillRect(0, 0, W, VH);
 
     drawBgLayer(imgs.bgClouds,    0.08, true);
-    drawBgLayer(imgs.bgMountains, 0.18, false);
-    drawBgLayer(imgs.bgTrees,     0.40, false);
+    drawBgLayer(imgs.bgMountains, 0.18, true);
+    drawBgLayer(imgs.bgTrees,     0.40, true);
   }
 
   function drawTrunk() {
-    const img = imgs.tileset;
+    const img = baseImgs.tileset;
     const hasTileset = img && img.complete && img.naturalWidth;
 
     if (hasTileset) {
