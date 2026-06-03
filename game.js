@@ -775,7 +775,7 @@
 
           // Draw dirt layers underneath down to the bottom of the viewport
           let row = 1;
-          const dirtCols = [9, 11, 12, 13];
+          const dirtCols = [12, 13];
           while (true) {
             const dy = Math.round(y + row * 16);
             if (dy >= VH) break;
