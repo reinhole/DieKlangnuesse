@@ -159,3 +159,25 @@ test('runThreshold scales running speed and separates it from jumpThreshold', as
   expect(isGrounded).toBe(true);
 });
 
+test('squirrel can move via arrow keys without the mic on', async ({ page }) => {
+  await boot(page);
+  
+  const getPlayerX = () => page.evaluate(() => window.__game.player.x);
+  const startX = await getPlayerX();
+  
+  // Make sure volume is 0 (mic is off by default, and manual volume starts at 0)
+  await setVolume(page, 0);
+  
+  // Press ArrowRight
+  await page.keyboard.down('ArrowRight');
+  
+  // Advance physics step
+  await step(page, 1);
+  
+  const endX = await getPlayerX();
+  expect(endX).toBeGreaterThan(startX);
+  
+  // Release ArrowRight
+  await page.keyboard.up('ArrowRight');
+});
+

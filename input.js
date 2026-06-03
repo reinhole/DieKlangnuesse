@@ -170,8 +170,10 @@
   };
 
   const isJumpHeld = () => jumpHeld || getVolume() >= jumpThreshold();
+  const isMicActive = () => micActive;
+  const isKeyboardMoving = () => leftHeld || rightHeld;
 
-  window.Input = { getVolume, getDirection, consumeJump, isJumpHeld, enableMic, updateMeter, lastJumpInfo: { source: null, volume: 0 } };
+  window.Input = { getVolume, getDirection, consumeJump, isJumpHeld, enableMic, updateMeter, isMicActive, isKeyboardMoving, lastJumpInfo: { source: null, volume: 0 } };
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", bind);

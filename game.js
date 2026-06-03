@@ -317,7 +317,10 @@
     if (player.hurtTimer > 0) player.hurtTimer--;
 
     const d = window.Input.getDirection();
-    const vol = window.Input.getVolume();
+    let vol = window.Input.getVolume();
+    if (window.Input.isMicActive && !window.Input.isMicActive() && window.Input.isKeyboardMoving && window.Input.isKeyboardMoving()) {
+      vol = 1.0;
+    }
     const runVol = Math.min(1, vol / (c.runThreshold != null ? c.runThreshold : 0.4));
 
     // Horizontal speed logic:
