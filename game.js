@@ -644,10 +644,10 @@
     for (let i = 1; i <= 2; i++) loadImg('hurt' + i, '/SPRITES/player/hurt/player-hurt-' + i + '.png');
     loadImg('tileset', '/ENVIRONMENT/tileset.png');
 
+    const fPrefix = '/Fort%20of%20Illusion%20Files/Assets/Layers/';
     const wPrefix = '/sunnyland%20winter%20forest%20files/ENVIRONMENT/';
-    loadImg('bgClouds', wPrefix + 'sky.png', winterImgs, true);
-    loadImg('bgMountains', wPrefix + 'mountains.png', winterImgs, true);
-    loadImg('bgTrees', wPrefix + 'mid-layer-a.png', winterImgs, true);
+    loadImg('bgClouds', fPrefix + 'back.png', winterImgs, true);
+    loadImg('bgMountains', fPrefix + 'mountains.png', winterImgs, true);
     loadImg('branch3', wPrefix + 'props-sliced/branche-left.gif', winterImgs, true);
     loadImg('branch5', wPrefix + 'props-sliced/branche-right.gif', winterImgs, true);
     loadImg('tileset', wPrefix + 'tileset.png', winterImgs, true);
@@ -696,7 +696,9 @@
 
     drawBgLayer(imgs.bgClouds,    0.08, true);
     drawBgLayer(imgs.bgMountains, 0.18, true);
-    drawBgLayer(imgs.bgTrees,     0.40, true);
+    if (game.level < 2) {
+      drawBgLayer(imgs.bgTrees,     0.40, true);
+    }
   }
 
   function drawTrunk() {
