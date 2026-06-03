@@ -30,12 +30,34 @@
     </header>
 
     <div class="stage">
-      <canvas
-        id="game-canvas"
-        data-testid="game-canvas"
-        width="480"
-        height="640"
-      ></canvas>
+      <div class="canvas-container">
+        <canvas
+          id="game-canvas"
+          data-testid="game-canvas"
+          width="480"
+          height="640"
+        ></canvas>
+
+        <!-- Death Screen Overlay -->
+        <div id="death-screen" class="overlay-screen hidden" data-testid="death-screen">
+          <div class="overlay-panel">
+            <h2 class="death-title">GAME OVER</h2>
+            <div class="death-stats">
+              <div class="death-stat">Score: <span data-testid="death-score">0</span></div>
+              <div class="death-stat">Level: <span data-testid="death-level">1</span></div>
+            </div>
+            <button data-testid="btn-death-reset" class="btn btn-reset btn-death-reset">Play Again</button>
+          </div>
+        </div>
+
+        <!-- Level Up Overlay -->
+        <div id="level-up-screen" class="overlay-screen" data-testid="level-up-screen">
+          <div class="level-up-panel">
+            <h2 class="level-up-title">LEVEL UP!</h2>
+            <div class="level-up-subtitle">Ready for Level <span data-testid="level-up-num">2</span></div>
+          </div>
+        </div>
+      </div>
     </div>
 
 

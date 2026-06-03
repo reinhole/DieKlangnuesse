@@ -99,15 +99,22 @@ body {
   align-items: center;
 }
 
-#game-canvas {
+.canvas-container {
+  position: relative;
   max-width: 100%;
   max-height: 100%;
   width: auto;
   height: 100vh;
   aspect-ratio: 480 / 640;
+}
+
+#game-canvas {
+  width: 100%;
+  height: 100%;
   background: #3b2f63;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
+  display: block;
 }
 
 .btn {
@@ -150,4 +157,154 @@ body {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+/* Overlay Screen common styles */
+.overlay-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: auto;
+}
+
+/* Hidden state for screen overlays */
+.hidden {
+  display: none !important;
+}
+
+/* Death Screen backdrop */
+#death-screen {
+  background: rgba(26, 18, 40, 0.85);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: fadeIn 0.4s ease-out;
+}
+
+/* Death Screen retro panel */
+.overlay-panel {
+  background: var(--panel);
+  border: 4px solid var(--accent);
+  border-radius: 8px;
+  padding: 30px;
+  width: 280px;
+  text-align: center;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.8), inset 0 0 10px rgba(0, 0, 0, 0.5);
+  transform: scale(1);
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.death-title {
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 28px;
+  color: var(--warn);
+  text-shadow: 2px 2px 0 #000;
+  letter-spacing: 2px;
+  animation: pulse 1.5s infinite;
+}
+
+.death-stats {
+  background: var(--bg);
+  border: 2px solid var(--panel-light);
+  border-radius: 4px;
+  padding: 15px;
+  margin-bottom: 25px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.death-stat {
+  font-size: 18px;
+  display: flex;
+  justify-content: space-between;
+  color: var(--ink);
+}
+
+.death-stat span {
+  color: var(--accent);
+  font-weight: bold;
+}
+
+.btn-death-reset {
+  width: 100%;
+  font-size: 16px;
+  padding: 10px;
+  border-color: var(--accent);
+  background: var(--good);
+}
+.btn-death-reset:hover {
+  background: #25542a;
+}
+
+/* Level Up Screen styles */
+#level-up-screen {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.6);
+  pointer-events: none;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: auto;
+  height: auto;
+  z-index: 6;
+  transition: opacity 0.3s ease, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+#level-up-screen.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.level-up-panel {
+  background: var(--panel-light);
+  border: 4px solid var(--accent);
+  border-radius: 6px;
+  padding: 15px 30px;
+  text-align: center;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.6);
+}
+
+.level-up-title {
+  margin: 0;
+  font-size: 24px;
+  color: var(--accent);
+  text-shadow: 2px 2px 0 #000;
+  letter-spacing: 3px;
+  white-space: nowrap;
+}
+
+.level-up-subtitle {
+  margin: 4px 0 0;
+  font-size: 16px;
+  color: var(--ink);
+  letter-spacing: 1px;
+}
+
+.level-up-subtitle span {
+  color: var(--accent);
+  font-weight: bold;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes popIn {
+  from { transform: scale(0.7); }
+  to { transform: scale(1); }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
 }

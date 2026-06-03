@@ -161,6 +161,7 @@
     const el = $("game-status");
     if (el) el.textContent = s; // synchronous, exact-cased contract value
     updateButtons();
+    syncDOM();
   }
 
   function updateButtons() {
@@ -296,7 +297,7 @@
     if (window.__rng) {
       window.__rng.setSeed(window.__rng.seed);
     }
-    game = { score: 0, lives: cfg().startLives, level: 1, enemies: [], particles: [] };
+    game = { score: 0, lives: cfg().startLives, level: 1, enemies: [], particles: [], levelUpTimer: 0 };
     generateLevel();
     placePlayerStart();
     syncDOM();
@@ -322,6 +323,7 @@
     frameCount++;
 
     if (player.hurtTimer > 0) player.hurtTimer--;
+    if (game.levelUpTimer > 0) game.levelUpTimer--;
 
     const d = window.Input.getDirection();
     let vol = window.Input.getVolume();
@@ -515,6 +517,7 @@
     const c = cfg();
     if (game.score >= game.level * c.nutsPerLevel) {
       game.level++;
+      game.levelUpTimer = 90; // show level-up banner for ~1.5s
       generateLevel(); // taller fresh section
       placePlayerStart();
     }
@@ -533,6 +536,8 @@
   }
 
   function syncDOM() {
+    if (!game) return;
+
     $("score").textContent = String(game.score);
     $("lives").textContent = String(game.lives);
     $("level").textContent = String(game.level);
@@ -556,6 +561,32 @@
     }
     const nc = $("nut-count");
     if (nc) nc.textContent = String(remaining);
+
+    // Death screen overlay sync
+    const deathScreen = document.getElementById("death-screen");
+    if (deathScreen) {
+      if (state === "Game Over") {
+        deathScreen.classList.remove("hidden");
+        const deathScore = $("death-score");
+        if (deathScore) deathScore.textContent = String(game.score);
+        const deathLevel = $("death-level");
+        if (deathLevel) deathLevel.textContent = String(game.level);
+      } else {
+        deathScreen.classList.add("hidden");
+      }
+    }
+
+    // Level up overlay sync
+    const levelUpScreen = document.getElementById("level-up-screen");
+    if (levelUpScreen) {
+      if (game.levelUpTimer > 0) {
+        levelUpScreen.classList.add("show");
+        const levelUpNum = $("level-up-num");
+        if (levelUpNum) levelUpNum.textContent = String(game.level);
+      } else {
+        levelUpScreen.classList.remove("show");
+      }
+    }
 
     if (window.Input && window.Input.updateMeter) window.Input.updateMeter();
   }
@@ -923,6 +954,11 @@
     $("btn-pause").addEventListener("click", onPause);
     $("btn-reset").addEventListener("click", onReset);
     $("btn-mute").addEventListener("click", () => audio.toggleMute());
+
+    const deathReset = $("btn-death-reset");
+    if (deathReset) {
+      deathReset.addEventListener("click", onReset);
+    }
 
     newGame();
     setState("Running");

@@ -181,3 +181,64 @@ test('squirrel can move via arrow keys without the mic on', async ({ page }) => 
   await page.keyboard.up('ArrowRight');
 });
 
+test('level-up screen appears and disappears after a short time', async ({ page }) => {
+  await boot(page, { config: { branchOffsetX: 0, nutsPerLevel: 1 } });
+  
+  // Before leveling up, the overlay shouldn't have class "show"
+  await expect(page.getByTestId('level-up-screen')).not.toHaveClass(/show/);
+
+  // Jump to collect the nut
+  await setDirection(page, 0);
+  await setVolume(page, 1);
+  await step(page, 40);
+
+  // Score increases, level becomes 2, level-up screen should be shown
+  await expect(page.getByTestId('score')).toHaveText('1');
+  await expect(page.getByTestId('level')).toHaveText('2');
+  await expect(page.getByTestId('level-up-screen')).toHaveClass(/show/);
+  await expect(page.getByTestId('level-up-num')).toHaveText('2');
+
+  // Advance physics steps beyond the 90 tick timer
+  await step(page, 95);
+  await expect(page.getByTestId('level-up-screen')).not.toHaveClass(/show/);
+});
+
+test('death screen is displayed on game over with stats and a functional reset button', async ({ page }) => {
+  await boot(page, { config: { branchOffsetX: 0 } });
+  
+  // Before dying, death screen should be hidden
+  await expect(page.getByTestId('death-screen')).toHaveClass(/hidden/);
+
+  // Fall 3 times to lose all lives
+  const fall = () =>
+    page.evaluate(() => {
+      const p = window.__game.player;
+      p.y = window.__game.cameraY - 30;
+      p.vy = -5;
+      p.grounded = false;
+    });
+
+  await fall();
+  await step(page, 1);
+  await fall();
+  await step(page, 1);
+  await fall();
+  await step(page, 1);
+
+  // Game over state reached
+  await expect(page.getByTestId('game-status')).toHaveText('Game Over');
+  
+  // Death screen should be visible
+  await expect(page.getByTestId('death-screen')).not.toHaveClass(/hidden/);
+  await expect(page.getByTestId('death-score')).toHaveText('0');
+  await expect(page.getByTestId('death-level')).toHaveText('1');
+
+  // Click the reset button inside the death screen
+  await page.getByTestId('btn-death-reset').click();
+
+  // Status returns to Running, death screen hidden
+  await expect(page.getByTestId('game-status')).toHaveText('Running');
+  await expect(page.getByTestId('death-screen')).toHaveClass(/hidden/);
+});
+
+
