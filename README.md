@@ -1,3 +1,56 @@
+# 🐿️🌰 Die Klangnüsse
+
+Ein Pixel-Platformer im Stil von *Shovel Knight*: Ein Eichhörnchen klettert einen
+Baum **nach oben** und hüpft von Ast zu Ast, um Nüsse zu sammeln.
+
+Das Besondere: Gesteuert wird über die **Stimme**. Je lauter du bist, desto
+schneller läuft das Eichhörnchen — und wenn du **laut schreist, springt es**. Bist
+du leise, schleicht es langsam. Die **Richtung** bestimmst du mit den **Pfeiltasten
+Links/Rechts** (oder den Buttons auf dem Bildschirm).
+
+## Steuerung
+
+| Eingabe | Wirkung |
+| --- | --- |
+| 📢 Lautstärke (Mikrofon oder Schieberegler) | Tempo — leise = langsam, laut = schnell |
+| 📢 Sehr laut / Schrei (oder **Jump**-Button) | Sprung (nur am Boden) |
+| ⬅️ ➡️ Pfeiltasten **oder** ◄/► Buttons | Richtung |
+| **Start / Pause / Reset** | Spielsteuerung |
+| 🎤 **Enable mic** | Mikrofon aktivieren (optional) |
+
+Ziel: Sammle die Nüsse, klettere immer höher, steige in Level auf. Fällst du unten
+aus dem Bild, kostet das ein Leben. Bei 0 Leben ist das Spiel vorbei.
+
+> Das Mikrofon ist optional. Ohne Mikrofon (oder im Test) funktioniert alles über
+> den **Lautstärke-Schieberegler** und die Buttons — das Spiel ist ohne Mikrofon
+> voll spielbar und vollständig testbar.
+
+## Lokal starten
+
+```bash
+npm install
+PORT=3000 node server.js     # danach http://localhost:3000 oeffnen
+```
+
+## Tests
+
+End-to-End-Tests laufen mit Playwright, deterministisch über die DOM-Schnittstelle
+und die `window.__*`-Test-Hooks (kein echtes Mikrofon noetig):
+
+```bash
+npx playwright install chromium   # nur beim ersten Mal
+npm test
+```
+
+## Technik (Kurzueberblick)
+
+Vanilla JavaScript, keine Runtime-Dependencies — `server.js` ist ein kleiner
+statischer HTTP-Server. Der Spielzustand steht **als lesbarer Text im DOM**
+(stabile `data-testid`s), Zufall ist seedbar (`window.__setSeed`) und Timing ist
+konfigurierbar (`window.__config`). Details und Konventionen für die Weiterarbeit
+stehen in `CLAUDE.md`.
+
+---
 
 ### Wettbewerbs-Loesung
 
@@ -34,6 +87,12 @@ solution/
 |-- package.json       <- Dependencies (PFLICHT)
 |-- package-lock.json  <- Lock-Datei (PFLICHT, npm install generiert sie)
 |-- .gitignore         <- node_modules/ ausschliessen
+|-- index.html         <- Spiel-UI (DOM-Contract)
+|-- style.css          <- Pixel-Styling
+|-- rng.js             <- seedbarer Zufall
+|-- input.js           <- Mikrofon- und manuelle Eingabe
+|-- game.js            <- Spiel-Engine
+|-- tests/             <- Playwright-Tests
 ```
 
 #### Regeln
@@ -56,7 +115,9 @@ PORT=3000 node server.js
 
 #### Assets
 
-Fuer grafische Assets koennt ihr die freien Assets von https://kenney.nl/ verwenden.
+Fuer grafische Assets koennt ihr die freien Assets von https://kenney.nl/
+verwenden. Diese Loesung nutzt stattdessen prozedural gezeichnete Pixel-Grafik
+(keine externen Asset-Dateien noetig).
 
 #### Beispiel server.js
 
