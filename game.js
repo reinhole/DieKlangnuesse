@@ -108,12 +108,12 @@
   const DEFAULTS = {
     gravity: 0.5,
     jumpImpulse: 12,
-    moveSpeedMax: 6,
+    moveSpeedMax: 3,
     jumpThreshold: 0.7,
     branchSpacingV: 92, // vertical gap between branches (world units)
     branchOffsetX: 70, // how far branch centers sit from the trunk
     branchWidth: 140,
-    nutsPerLevel: 5,
+    nutsPerLevel: 15,
     startLives: 3,
     tickMs: 16,
     followOffset: 200, // keep the squirrel this far above the screen bottom (in world units)
@@ -184,46 +184,68 @@
     game.branches.push({ x: 0, w: W, top: 40, ground: true });
 
     const numNuts = c.nutsPerLevel + (game.level - 1);
-    const branchWidth = Math.max(80, c.branchWidth - (game.level - 1) * 10);
     const spacingY = Math.min(110, c.branchSpacingV + (game.level - 1) * 2);
 
-    let lastSide = 0;
-    let consecutiveCount = 0;
+    let nutIdCounter = 1;
 
     for (let i = 0; i < numNuts; i++) {
-      let side = window.__rng.next() < 0.5 ? -1 : 1;
-      if (side === lastSide) {
-        consecutiveCount++;
-        if (consecutiveCount >= 2) {
-          side = -side;
-          consecutiveCount = 1;
-        }
-      } else {
-        consecutiveCount = 1;
-      }
-      lastSide = side;
-
-      const cx = W / 2 + side * c.branchOffsetX;
       const top = 40 + (i + 1) * spacingY;
-      const branch = { x: cx - branchWidth / 2, w: branchWidth, top };
-      game.branches.push(branch);
-      game.nuts.push({ x: cx, y: top + 16, collected: false, id: i + 1 });
+      
+      const numPlatforms = window.__rng.next() < 0.5 ? 1 : 2;
+      const leftOptions = [1, 2];
+      const rightOptions = [3, 4];
+      let selectedOptions = [];
 
-      // Spawn Ant on branch (except ground), chance scales with level
-      // Level 1: 40% chance, Level 2: 55%, clamped at 80%
-      const enemySpawnChance = Math.min(0.8, 0.4 + (game.level - 1) * 0.15);
-      if (window.__rng.next() < enemySpawnChance) {
-        game.enemies.push({
-          x: cx,
-          y: top,
-          w: 24,
-          h: 20,
-          vx: 0.8 + (game.level - 1) * 0.15,
-          facing: window.__rng.next() < 0.5 ? -1 : 1,
-          minX: branch.x + 16,
-          maxX: branch.x + branch.w - 16,
-          animFrame: 0
-        });
+      if (numPlatforms === 1) {
+        const allOptions = [1, 2, 3, 4];
+        selectedOptions.push(allOptions[Math.floor(window.__rng.next() * 4)]);
+      } else {
+        selectedOptions.push(leftOptions[Math.floor(window.__rng.next() * 2)]);
+        selectedOptions.push(rightOptions[Math.floor(window.__rng.next() * 2)]);
+      }
+
+      for (const opt of selectedOptions) {
+        const type = window.__rng.next() < 0.5 ? 3 : 5;
+        const branchWidth = type === 3 ? 100 : 133;
+        let bx, pointsRight;
+
+        let borderShift = type === 3 ? 20 : 45;
+        let trunkOffset = type === 3 ? c.branchOffsetX : c.branchOffsetX - 25;
+
+        if (opt === 1) { // Left wall -> inside
+          bx = cameraOffX - borderShift;
+          pointsRight = true;
+        } else if (opt === 2) { // Trunk -> left
+          bx = W / 2 - trunkOffset - branchWidth / 2;
+          pointsRight = false;
+        } else if (opt === 3) { // Trunk -> right
+          bx = W / 2 + trunkOffset - branchWidth / 2;
+          pointsRight = true;
+        } else { // Right wall -> inside
+          bx = W - cameraOffX - branchWidth + borderShift;
+          pointsRight = false;
+        }
+
+        const branch = { x: bx, w: branchWidth, top: top, type: type, pointsRight: pointsRight };
+        game.branches.push(branch);
+        
+        const cx = bx + branchWidth / 2;
+        game.nuts.push({ x: cx, y: top + 16, collected: false, id: nutIdCounter++ });
+
+        const enemySpawnChance = Math.min(0.8, 0.4 + (game.level - 1) * 0.15);
+        if (window.__rng.next() < enemySpawnChance) {
+          game.enemies.push({
+            x: cx,
+            y: top,
+            w: 24,
+            h: 20,
+            vx: 0.8 + (game.level - 1) * 0.15,
+            facing: window.__rng.next() < 0.5 ? -1 : 1,
+            minX: branch.x + 16,
+            maxX: branch.x + branch.w - 16,
+            animFrame: 0
+          });
+        }
       }
     }
     game.topY = 40 + (numNuts + 1) * spacingY;
@@ -281,12 +303,12 @@
     // Horizontal speed logic:
     if (!player.grounded && player.isVoiceJumping) {
       if (d !== 0) {
-        player.vx = d * c.moveSpeedMax * vol;
+        player.vx = d * c.moveSpeedMax;
       } else {
         player.vx = player.airVx;
       }
     } else {
-      player.vx = d * c.moveSpeedMax * vol;
+      player.vx = d * c.moveSpeedMax;
     }
 
     player.x = clamp(player.x + player.vx, cameraOffX + player.w / 2, W - cameraOffX - player.w / 2);
@@ -590,30 +612,29 @@
       return;
     }
     const screenY = toScreenY(b.top);
-    const isRight = b.x + b.w / 2 > W / 2;
-
-    // Alternate between leafy (branch3) and bare (branch5) by branch x position.
-    const raw = Math.floor(b.x / 10) % 2 === 0 ? imgs.branch3 : imgs.branch5;
+    const pointsRight = b.pointsRight !== undefined ? b.pointsRight : (b.x + b.w / 2 > W / 2);
+    const raw = b.type === 3 ? imgs.branch3 : imgs.branch5;
 
     if (raw && raw.complete && raw.naturalWidth) {
-      const dw = b.w + 12;
-      const dh = Math.round(raw.height * (dw / raw.width));
-      const dx = isRight ? b.x - 6 : b.x + b.w + 6 - dw;
+      const dw = b.w;
+      const dh = raw.height;
+      const topOffset = b.type === 3 ? 2 : 12;
+      const dx = b.x;
 
       ctx.save();
-      if (!isRight) {
+      if (!pointsRight) {
         ctx.translate(Math.round(dx + dw), 0);
         ctx.scale(-1, 1);
-        ctx.drawImage(raw, 0, Math.round(screenY), Math.round(dw), Math.round(dh));
+        ctx.drawImage(raw, 0, Math.round(screenY - topOffset), Math.round(dw), Math.round(dh));
       } else {
-        ctx.drawImage(raw, Math.round(dx), Math.round(screenY), Math.round(dw), Math.round(dh));
+        ctx.drawImage(raw, Math.round(dx), Math.round(screenY - topOffset), Math.round(dw), Math.round(dh));
       }
       ctx.restore();
     } else {
       // Fallback while sprites load.
       px(b.x, screenY, b.w, 14, C.branch);
       px(b.x, screenY, b.w, 4, C.barkLight);
-      const outer = isRight ? b.x + b.w - 24 : b.x - 12;
+      const outer = pointsRight ? b.x + b.w - 24 : b.x - 12;
       px(outer, screenY - 18, 36, 22, C.leafNear);
     }
   }
