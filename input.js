@@ -55,14 +55,20 @@
   // explicit jump (button/key/hook) was queued. The engine still gates the
   // actual jump on being grounded.
   function consumeJump() {
-    const high = getVolume() >= jumpThreshold();
+    const vol = getVolume();
+    const high = vol >= jumpThreshold();
     const edge = high && !prevHigh;
     prevHigh = high;
     if (jumpQueued) {
       jumpQueued = false;
+      window.Input.lastJumpInfo = { source: "manual", volume: vol };
       return true;
     }
-    return edge;
+    if (edge) {
+      window.Input.lastJumpInfo = { source: "voice", volume: vol };
+      return true;
+    }
+    return false;
   }
 
   // --- Meter (visible numeric volume 0..100) ------------------------------
@@ -112,7 +118,7 @@
     }
     const rms = Math.sqrt(sum / micData.length);
     // Map a usable speaking/shouting range onto [0,1] and smooth it.
-    const norm = Math.min(1, rms / 0.5);
+    const norm = Math.min(1, rms / 0.15);
     micVolume = micVolume * 0.6 + norm * 0.4;
     updateMeter();
     requestAnimationFrame(sampleMic);
@@ -177,7 +183,7 @@
     jumpQueued = true;
   };
 
-  window.Input = { getVolume, getDirection, consumeJump, enableMic, updateMeter };
+  window.Input = { getVolume, getDirection, consumeJump, enableMic, updateMeter, lastJumpInfo: { source: null, volume: 0 } };
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", bind);

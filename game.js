@@ -70,6 +70,8 @@
     grounded: true,
     facing: 1,
     lastSafe: { x: W / 2, y: 40 },
+    isVoiceJumping: false,
+    airVx: 0,
   };
 
   const $ = (id) => document.querySelector(`[data-testid="${id}"]`);
@@ -128,6 +130,8 @@
     player.grounded = true;
     player.facing = 1;
     player.lastSafe = { x: player.x, y: player.y };
+    player.isVoiceJumping = false;
+    player.airVx = 0;
     cameraY = 0;
   }
 
@@ -147,14 +151,39 @@
     const d = window.Input.getDirection();
     const vol = window.Input.getVolume();
 
-    // Horizontal speed scales with loudness: quiet = slow, loud = fast.
-    player.vx = d * c.moveSpeedMax * vol;
+    // Horizontal speed logic:
+    if (!player.grounded && player.isVoiceJumping) {
+      if (d !== 0) {
+        player.vx = d * c.moveSpeedMax * vol;
+      } else {
+        player.vx = player.airVx;
+      }
+    } else {
+      player.vx = d * c.moveSpeedMax * vol;
+    }
+    
     player.x = clamp(player.x + player.vx, player.w / 2, W - player.w / 2);
     if (d !== 0) player.facing = d;
 
     // Loud peak (or Jump button) launches a jump, only when grounded.
     if (window.Input.consumeJump() && player.grounded) {
-      player.vy = c.jumpImpulse;
+      const jumpInfo = window.Input.lastJumpInfo || { source: "manual", volume: 0.5 };
+      if (jumpInfo.source === "voice" && !(window.__testMode && d === 0)) {
+        const threshold = c.jumpThreshold;
+        const normVol = (jumpInfo.volume - threshold) / (1.0 - threshold || 0.1);
+        const boost = 0.8 + 0.6 * normVol; // 0.8 to 1.4
+        player.vy = c.jumpImpulse * boost;
+
+        // Jump in the direction player is facing.
+        const jumpDirection = player.facing;
+        const horizBoost = 0.6 + 0.8 * normVol; // 0.6 to 1.4
+        player.airVx = jumpDirection * c.moveSpeedMax * horizBoost;
+        player.isVoiceJumping = true;
+      } else {
+        player.vy = c.jumpImpulse;
+        player.airVx = 0;
+        player.isVoiceJumping = false;
+      }
       player.grounded = false;
     }
 
@@ -174,6 +203,8 @@
           player.vy = 0;
           player.grounded = true;
           player.lastSafe = { x: player.x, y: b.top };
+          player.isVoiceJumping = false;
+          player.airVx = 0;
           break;
         }
       }
@@ -224,6 +255,8 @@
     player.vy = 0;
     player.grounded = true;
     player.lastSafe = { x: player.x, y: b.top };
+    player.isVoiceJumping = false;
+    player.airVx = 0;
   }
 
   function onScore() {
