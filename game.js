@@ -209,7 +209,14 @@
       }
 
       for (const opt of selectedOptions) {
-        const type = (c.branchOffsetX === 0) ? 3 : (window.__rng.next() < 0.5 ? 3 : 5);
+        let type = 3;
+        if (c.branchOffsetX !== 0) {
+          if (opt === 2 || opt === 3) {
+            type = 3; // Stem branches are always green
+          } else {
+            type = window.__rng.next() < 0.5 ? 3 : 5; // Outside can be green or dark
+          }
+        }
         const branchWidth = type === 3 ? 100 : 133;
         let bx, pointsRight;
 
