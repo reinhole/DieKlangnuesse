@@ -140,32 +140,7 @@ body {
 .btn-reset {
   background: var(--warn);
 }
-.btn-jump {
-  background: var(--accent);
-  color: #1a1228;
-}
 
-.dpad-row {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 10;
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  align-items: center;
-  padding: 8px;
-  background: #1a122866;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-}
-
-.btn-dpad {
-  min-width: 80px;
-  font-size: 18px;
-  padding: 10px 16px;
-}
 
 /* Hidden state mirror: present in the DOM, invisible on screen. */
 .state-mirror {

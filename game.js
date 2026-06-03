@@ -110,6 +110,7 @@
     jumpImpulse: 12,
     moveSpeedMax: 3,
     jumpThreshold: 0.7,
+    runThreshold: 0.4,
     branchSpacingV: 92, // vertical gap between branches (world units)
     branchOffsetX: 70, // how far branch centers sit from the trunk
     branchWidth: 140,
@@ -196,7 +197,10 @@
       const rightOptions = [3, 4];
       let selectedOptions = [];
 
-      if (numPlatforms === 1) {
+      if (c.branchOffsetX === 0) {
+        // If branchOffsetX is 0 (test layout), force a trunk-centered platform so player can jump straight up to it.
+        selectedOptions.push(window.__rng.next() < 0.5 ? 2 : 3);
+      } else if (numPlatforms === 1) {
         const allOptions = [1, 2, 3, 4];
         selectedOptions.push(allOptions[Math.floor(window.__rng.next() * 4)]);
       } else {
@@ -205,7 +209,7 @@
       }
 
       for (const opt of selectedOptions) {
-        const type = window.__rng.next() < 0.5 ? 3 : 5;
+        const type = (c.branchOffsetX === 0) ? 3 : (window.__rng.next() < 0.5 ? 3 : 5);
         const branchWidth = type === 3 ? 100 : 133;
         let bx, pointsRight;
 
@@ -314,16 +318,17 @@
 
     const d = window.Input.getDirection();
     const vol = window.Input.getVolume();
+    const runVol = Math.min(1, vol / (c.runThreshold != null ? c.runThreshold : 0.4));
 
     // Horizontal speed logic:
     if (!player.grounded && player.isVoiceJumping) {
       if (d !== 0) {
-        player.vx = d * c.moveSpeedMax;
+        player.vx = d * c.moveSpeedMax * runVol;
       } else {
         player.vx = player.airVx;
       }
     } else {
-      player.vx = d * c.moveSpeedMax;
+      player.vx = d * c.moveSpeedMax * runVol;
     }
 
     player.x = clamp(player.x + player.vx, cameraOffX + player.w / 2, W - cameraOffX - player.w / 2);
@@ -566,6 +571,7 @@
     loadImg('branch5', '/ENVIRONMENT/props-sliced/branch-05.png');
     for (let i = 1; i <= 8; i++) loadImg('ant' + i, '/SPRITES/enemies/ant/ant-' + i + '.png');
     for (let i = 1; i <= 2; i++) loadImg('hurt' + i, '/SPRITES/player/hurt/player-hurt-' + i + '.png');
+    loadImg('tileset', '/ENVIRONMENT/tileset.png');
   }
 
   // Safe draw: skips if the image isn't loaded (avoids InvalidStateError throws).
@@ -584,13 +590,19 @@
     ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
   }
 
-  // Tile a background layer vertically with parallax.
-  function drawBgLayer(img, speed) {
+  // Tile a background layer vertically with parallax if shouldLoop is true,
+  // or draw it once at the bottom if shouldLoop is false.
+  function drawBgLayer(img, speed, shouldLoop = false) {
     if (!img || !img.complete || !img.naturalWidth) return;
     const sw = W;
     const sh = Math.round(img.height * (W / img.width));
-    const off = (cameraY * speed) % sh;
-    for (let y = -sh + off; y < VH + sh; y += sh) {
+    if (shouldLoop) {
+      const off = (cameraY * speed) % sh;
+      for (let y = -sh + off; y < VH + sh; y += sh) {
+        ctx.drawImage(img, 0, Math.round(y), sw, sh);
+      }
+    } else {
+      const y = cameraY * speed;
       ctx.drawImage(img, 0, Math.round(y), sw, sh);
     }
   }
@@ -603,27 +615,118 @@
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, W, VH);
 
-    drawBgLayer(imgs.bgClouds,    0.08);
-    drawBgLayer(imgs.bgMountains, 0.18);
-    drawBgLayer(imgs.bgTrees,     0.40);
+    drawBgLayer(imgs.bgClouds,    0.08, true);
+    drawBgLayer(imgs.bgMountains, 0.18, false);
+    drawBgLayer(imgs.bgTrees,     0.40, false);
   }
 
   function drawTrunk() {
-    const tx = W / 2 - 28;
-    px(tx, 0, 56, VH, C.bark);
-    for (let i = 0; i < 8; i++) {
-      const yy = ((i * 90 - cameraY * 0.6) % VH + VH) % VH;
-      px(tx + 6, yy, 4, 40, C.barkDark);
-      px(tx + 40, yy + 24, 4, 32, C.barkLight);
-      px(tx + 22, yy + 60, 3, 28, C.barkDark);
+    const img = imgs.tileset;
+    const hasTileset = img && img.complete && img.naturalWidth;
+
+    if (hasTileset) {
+      // Visible rows in world units
+      const startRow = Math.max(0, Math.floor(cameraY / 16) - 1);
+      const endRow = Math.ceil((cameraY + VH) / 16) + 1;
+
+      for (let r = startRow; r <= endRow; r++) {
+        const worldY = r * 16;
+        const screenY = toScreenY(worldY + 16);
+
+        // Group into 2-row blocks for organic segment tiling (bark, knots, hollows)
+        const B = Math.floor(r / 2);
+        const subRow = ((r % 2) + 2) % 2;
+
+        // Simple hash to determine block segment type (excluding Segment 5 which has mossy/ground logs)
+        const hash = Math.abs((B * 123456789) % 100);
+        let segmentStartRow = 2; // default Segment 1
+
+        if (hash < 15) {
+          segmentStartRow = 10; // Segment 3 with hollow (Rows 10,11)
+        } else if (hash < 30) {
+          segmentStartRow = 14; // Segment 4 with knot (Rows 14,15)
+        } else {
+          // Alternating normal wood segments
+          segmentStartRow = (hash % 2 === 0) ? 2 : 6; // Segment 1 (Rows 2,3) or Segment 2 (Rows 6,7)
+        }
+
+        const sr = segmentStartRow + subRow;
+
+        // Trunk in tileset.png is columns 15 to 20 (6 tiles, 96px width)
+        const sx = 15 * 16;
+        const sy = sr * 16;
+
+        // Draw centered at W/2 = 240
+        const tx = W / 2 - 48;
+        ctx.drawImage(img, sx, sy, 96, 16, Math.round(tx), Math.round(screenY), 96, 17);
+      }
+    } else {
+      // Fallback: procedural bark rectangle while assets load
+      const tx = W / 2 - 28;
+      px(tx, 0, 56, VH, C.bark);
+      for (let i = 0; i < 8; i++) {
+        const yy = ((i * 90 - cameraY * 0.6) % VH + VH) % VH;
+        px(tx + 6, yy, 4, 40, C.barkDark);
+        px(tx + 40, yy + 24, 4, 32, C.barkLight);
+        px(tx + 22, yy + 60, 3, 28, C.barkDark);
+      }
     }
   }
 
   function drawBranch(b) {
     if (b.ground) {
       const y = toScreenY(b.top);
-      px(0, y, W, VH - y, C.branch);
-      px(0, y, W, 6, C.barkLight);
+      const img = imgs.tileset;
+      const hasTileset = img && img.complete && img.naturalWidth;
+
+      if (hasTileset) {
+        // Tile size is 16. Draw ground tiles across the width of W = 480 (30 columns)
+        for (let x = 0; x < W; x += 16) {
+          const col = x / 16;
+          
+          // Columns 12 to 17 (inclusive) are where the trunk resides (X = 192 to 288).
+          // We do not draw ground tiles here so that the trunk roots show through.
+          if (col >= 12 && col < 18) {
+            continue;
+          }
+
+          // Grass tile selection (Row 14 of tileset.png)
+          let gCol = 9; // Default grass tile
+          let drawX = x;
+          let drawW = 16;
+          if (col === 11) {
+            gCol = 13; // Right corner edge tile immediately before trunk
+            drawW = 20; // Extend slightly to overlap trunk edge
+          } else if (col === 18) {
+            gCol = 8;  // Left corner edge tile immediately after trunk
+            drawX = x - 4; // Shift left to overlap trunk edge
+            drawW = 20;
+          } else {
+            // Alternate middle grass tiles for variation
+            const grassCols = [9, 11, 12];
+            gCol = grassCols[col % grassCols.length];
+          }
+
+          // Draw top grass row (starts at top of ground platform)
+          ctx.drawImage(img, gCol * 16, 14 * 16, 16, 16, drawX, Math.round(y), drawW, 17);
+
+          // Draw dirt layers underneath down to the bottom of the viewport
+          let row = 1;
+          const dirtCols = [9, 11, 12, 13];
+          while (true) {
+            const dy = Math.round(y + row * 16);
+            if (dy >= VH) break;
+
+            const dCol = dirtCols[(col + row) % dirtCols.length];
+            ctx.drawImage(img, dCol * 16, 15 * 16, 16, 16, drawX, dy, drawW, 17); // 17px height to avoid seams
+            row++;
+          }
+        }
+      } else {
+        // Fallback: draw flat procedural brown ground
+        px(0, y, W, VH - y, C.branch);
+        px(0, y, W, 6, C.barkLight);
+      }
       return;
     }
     const screenY = toScreenY(b.top);

@@ -135,31 +135,7 @@
       });
     }
 
-    const press = (el, on, off) => {
-      if (!el) return;
-      el.addEventListener("pointerdown", (e) => {
-        e.preventDefault();
-        on();
-      });
-      el.addEventListener("pointerup", off);
-      el.addEventListener("pointerleave", off);
-      el.addEventListener("pointercancel", off);
-    };
-    press($("btn-left"), () => (leftHeld = true), () => (leftHeld = false));
-    press($("btn-right"), () => (rightHeld = true), () => (rightHeld = false));
 
-    const jumpBtn = $("btn-jump");
-    if (jumpBtn) {
-      jumpBtn.addEventListener("pointerdown", (e) => {
-        e.preventDefault();
-        jumpQueued = true;
-        jumpHeld = true;
-      });
-      const releaseJump = () => { jumpHeld = false; };
-      jumpBtn.addEventListener("pointerup", releaseJump);
-      jumpBtn.addEventListener("pointerleave", releaseJump);
-      jumpBtn.addEventListener("pointercancel", releaseJump);
-    }
 
     const micBtn = $("btn-mic");
     if (micBtn) micBtn.addEventListener("click", enableMic);

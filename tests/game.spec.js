@@ -141,3 +141,21 @@ test('Reset returns to Running and clears stats', async ({ page }) => {
   await expect(page.getByTestId('lives')).toHaveText('3');
   await expect(page.getByTestId('level')).toHaveText('1');
 });
+
+test('runThreshold scales running speed and separates it from jumpThreshold', async ({ page }) => {
+  await boot(page, { config: { runThreshold: 0.5, jumpThreshold: 0.8, moveSpeedMax: 10 } });
+  
+  await setDirection(page, 1);
+  await setVolume(page, 0.5);
+  
+  const getPlayerX = () => page.evaluate(() => window.__game.player.x);
+  const startX = await getPlayerX();
+  
+  await step(page, 1);
+  const endX = await getPlayerX();
+  expect(endX - startX).toBeCloseTo(10, 1);
+  
+  const isGrounded = await page.evaluate(() => window.__game.player.grounded);
+  expect(isGrounded).toBe(true);
+});
+

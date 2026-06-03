@@ -71,7 +71,7 @@ the test tooling.
 
 ## Mechanic & feel
 
-Horizontal velocity = `direction × moveSpeedMax × volume` (quiet = slow). A loud
+Horizontal velocity = `direction × moveSpeedMax × min(1, volume / runThreshold)` (quiet = slow). A loud
 peak crossing `jumpThreshold` (rising edge) — or the Jump button — launches a jump
 only while grounded. Because speed and jump share the same loud volume, branch
 spacing / `jumpImpulse` / `gravity` need joint tuning so landings stay achievable;
