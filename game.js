@@ -592,12 +592,26 @@
   }
 
   // --- Sprite assets ---------------------------------------------------------
-  const imgs = {};
+  const baseImgs = {};
+  const winterImgs = {};
+  
+  const imgs = new Proxy(baseImgs, {
+    get(target, prop) {
+      if (game.score >= 30 && winterImgs[prop] && winterImgs[prop].complete && winterImgs[prop].naturalWidth) {
+        return winterImgs[prop];
+      }
+      return target[prop];
+    },
+    set(target, prop, value) {
+      target[prop] = value;
+      return true;
+    }
+  });
 
-  function loadImg(key, path) {
+  function loadImg(key, path, targetObj = baseImgs, absolute = false) {
     const img = new Image();
-    img.src = ASSET_BASE + path;
-    imgs[key] = img;
+    img.src = absolute ? path : ASSET_BASE + path;
+    targetObj[key] = img;
   }
 
   function loadSprites() {
@@ -613,6 +627,14 @@
     for (let i = 1; i <= 8; i++) loadImg('ant' + i, '/SPRITES/enemies/ant/ant-' + i + '.png');
     for (let i = 1; i <= 2; i++) loadImg('hurt' + i, '/SPRITES/player/hurt/player-hurt-' + i + '.png');
     loadImg('tileset', '/ENVIRONMENT/tileset.png');
+
+    const wPrefix = '/sunnyland%20winter%20forest%20files/ENVIRONMENT/';
+    loadImg('bgClouds', wPrefix + 'sky.png', winterImgs, true);
+    loadImg('bgMountains', wPrefix + 'mountains.png', winterImgs, true);
+    loadImg('bgTrees', wPrefix + 'mid-layer-a.png', winterImgs, true);
+    loadImg('branch3', wPrefix + 'props-sliced/branche-left.gif', winterImgs, true);
+    loadImg('branch5', wPrefix + 'props-sliced/branche-right.gif', winterImgs, true);
+    loadImg('tileset', wPrefix + 'tileset.png', winterImgs, true);
   }
 
   // Safe draw: skips if the image isn't loaded (avoids InvalidStateError throws).
