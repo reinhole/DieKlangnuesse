@@ -308,39 +308,71 @@
     if (window.Input && window.Input.updateMeter) window.Input.updateMeter();
   }
 
+  // --- Sprite assets ---------------------------------------------------------
+  const ASSET_BASE = '/Sunny-land-woods-files/Assets';
+  const imgs = {};
+
+  function loadImg(key, path) {
+    const img = new Image();
+    img.src = ASSET_BASE + path;
+    imgs[key] = img;
+  }
+
+  function loadSprites() {
+    loadImg('bgClouds',    '/ENVIRONMENT/bg-clouds.png');
+    loadImg('bgMountains', '/ENVIRONMENT/bg-mountains.png');
+    loadImg('bgTrees',     '/ENVIRONMENT/bg-trees.png');
+    for (let i = 1; i <= 8; i++) loadImg('idle' + i, '/SPRITES/player/idle/player-idle-' + i + '.png');
+    for (let i = 1; i <= 6; i++) loadImg('run'  + i, '/SPRITES/player/run/player-run-'   + i + '.png');
+    for (let i = 1; i <= 4; i++) loadImg('jump' + i, '/SPRITES/player/jump/player-jump-' + i + '.png');
+    for (let i = 1; i <= 3; i++) loadImg('acorn' + i, '/SPRITES/misc/acorn/acorn-' + i + '.png');
+    loadImg('branch3', '/ENVIRONMENT/props-sliced/branch-03.png');
+    loadImg('branch5', '/ENVIRONMENT/props-sliced/branch-05.png');
+  }
+
+  // Safe draw: skips if the image isn't loaded (avoids InvalidStateError throws).
+  function spr(img, dx, dy, dw, dh) {
+    if (!img || !img.complete || !img.naturalWidth) return;
+    ctx.drawImage(img, Math.round(dx), Math.round(dy), Math.round(dw), Math.round(dh));
+  }
+
+  // Render-local tick for animation — advances every frame, independent of
+  // physicsStep so animations run even while paused or in Ready state.
+  let renderTick = 0;
+
   // --- Rendering (read-only; never mutates state) -------------------------
   function px(x, y, w, h, color) {
     ctx.fillStyle = color;
     ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
   }
 
+  // Tile a background layer vertically with parallax.
+  function drawBgLayer(img, speed) {
+    if (!img || !img.complete || !img.naturalWidth) return;
+    const sw = W;
+    const sh = Math.round(img.height * (W / img.width));
+    const off = (cameraY * speed) % sh;
+    for (let y = -sh + off; y < H + sh; y += sh) {
+      ctx.drawImage(img, 0, Math.round(y), sw, sh);
+    }
+  }
+
   function drawBackground() {
+    // Sky fill as fallback while images load.
     const grad = ctx.createLinearGradient(0, 0, 0, H);
-    grad.addColorStop(0, C.sky0);
-    grad.addColorStop(1, C.sky1);
+    grad.addColorStop(0, '#4b8fd4');
+    grad.addColorStop(1, '#8dc8e8');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, W, H);
 
-    // Parallax foliage blobs, scrolling slower than the world.
-    const layers = [
-      { speed: 0.25, color: C.leafFar, size: 70, step: 140 },
-      { speed: 0.5, color: C.leafNear, size: 48, step: 110 },
-    ];
-    for (const l of layers) {
-      const off = (cameraY * l.speed) % l.step;
-      for (let sy = -l.step; sy < H + l.step; sy += l.step) {
-        for (let sx = 0; sx <= W; sx += l.step) {
-          const y = sy + off;
-          px(sx - l.size / 2, y, l.size, l.size / 2, l.color);
-        }
-      }
-    }
+    drawBgLayer(imgs.bgClouds,    0.08);
+    drawBgLayer(imgs.bgMountains, 0.18);
+    drawBgLayer(imgs.bgTrees,     0.40);
   }
 
   function drawTrunk() {
     const tx = W / 2 - 28;
     px(tx, 0, 56, H, C.bark);
-    // Bark texture: vertical light/dark streaks that scroll with the camera.
     for (let i = 0; i < 8; i++) {
       const yy = ((i * 90 - cameraY * 0.6) % H + H) % H;
       px(tx + 6, yy, 4, 40, C.barkDark);
@@ -356,69 +388,97 @@
       px(0, y, W, 6, C.barkLight);
       return;
     }
-    const y = toScreenY(b.top);
-    px(b.x, y, b.w, 14, C.branch);
-    px(b.x, y, b.w, 4, C.barkLight);
-    // Leaf cluster on the outer end.
-    const outer = b.x + b.w / 2 < W / 2 ? b.x - 12 : b.x + b.w - 24;
-    px(outer, y - 18, 36, 22, C.leafNear);
-    px(outer + 6, y - 26, 24, 14, C.leafFar);
+    const screenY = toScreenY(b.top);
+    const isRight = b.x + b.w / 2 > W / 2;
+
+    // Alternate between leafy (branch3) and bare (branch5) by branch x position.
+    const raw = Math.floor(b.x / 10) % 2 === 0 ? imgs.branch3 : imgs.branch5;
+
+    if (raw && raw.complete && raw.naturalWidth) {
+      const dw = b.w + 12;
+      const dh = Math.round(raw.height * (dw / raw.width));
+      const dx = isRight ? b.x - 6 : b.x + b.w + 6 - dw;
+
+      ctx.save();
+      if (!isRight) {
+        ctx.translate(Math.round(dx + dw), 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(raw, 0, Math.round(screenY), Math.round(dw), Math.round(dh));
+      } else {
+        ctx.drawImage(raw, Math.round(dx), Math.round(screenY), Math.round(dw), Math.round(dh));
+      }
+      ctx.restore();
+    } else {
+      // Fallback while sprites load.
+      px(b.x, screenY, b.w, 14, C.branch);
+      px(b.x, screenY, b.w, 4, C.barkLight);
+      const outer = isRight ? b.x + b.w - 24 : b.x - 12;
+      px(outer, screenY - 18, 36, 22, C.leafNear);
+    }
   }
 
   function drawNut(nut) {
     if (nut.collected) return;
     const sx = nut.x;
     const sy = toScreenY(nut.y);
-    px(sx - 7, sy - 6, 14, 14, C.nut); // body
-    px(sx - 7, sy - 12, 14, 6, C.nutCap); // cap
-    px(sx - 1, sy - 16, 3, 5, C.nutCap); // stem
-    px(sx - 4, sy - 3, 3, 3, C.barkLight); // glint
+
+    const frame = (Math.floor(renderTick / 4) % 3) + 1;
+    const img = imgs['acorn' + frame];
+    if (img && img.complete && img.naturalWidth) {
+      const dw = 28;
+      const dh = Math.round(img.height * (28 / img.width));
+      spr(img, sx - dw / 2, sy - dh, dw, dh);
+    } else {
+      px(sx - 7, sy - 6, 14, 14, C.nut);
+      px(sx - 7, sy - 12, 14, 6, C.nutCap);
+      px(sx - 1, sy - 16, 3, 5, C.nutCap);
+    }
   }
 
   function drawSquirrel() {
     const sx = player.x;
     const sy = toScreenY(player.y); // feet
-    const f = player.facing; // 1 right, -1 left
-    const run = player.grounded && Math.abs(player.vx) > 0.2;
-    const legPhase = run ? Math.floor(frameCount / 4) % 2 : 0;
+    const f = player.facing; // 1 = right, -1 = left
 
-    ctx.save();
-    ctx.translate(Math.round(sx), Math.round(sy));
-    ctx.scale(f, 1);
+    const running = player.grounded && Math.abs(player.vx) > 0.2;
+    const airborne = !player.grounded;
 
-    // Tail (behind body), wags while moving.
-    const wag = run ? (Math.floor(frameCount / 5) % 2 ? 2 : -2) : 0;
-    px(-18, -26 + wag, 10, 22, C.furDark);
-    px(-16, -30 + wag, 8, 10, C.fur);
+    let prefix, count, fps;
+    if (airborne)     { prefix = 'jump'; count = 4; fps = 8;  }
+    else if (running) { prefix = 'run';  count = 6; fps = 12; }
+    else              { prefix = 'idle'; count = 8; fps = 6;  }
 
-    // Body + belly.
-    px(-8, -24, 16, 20, C.fur);
-    px(-4, -16, 9, 12, C.belly);
+    const frame = (Math.floor(renderTick / Math.round(60 / fps)) % count) + 1;
+    const img = imgs[prefix + frame];
 
-    // Head.
-    px(2, -32, 14, 12, C.fur);
-    px(6, -30, 8, 6, C.belly);
-    // Ear.
-    px(4, -36, 5, 5, C.fur);
-    // Eye + nose.
-    px(11, -29, 3, 3, C.eye);
-    px(15, -26, 2, 2, C.eye);
+    const dw = 64;
+    const dh = Math.round(58 * (dw / 90)); // ≈ 41
 
-    // Legs (simple run cycle).
-    if (player.grounded) {
-      px(-6, -4, 5, 4, legPhase ? C.furDark : C.fur);
-      px(2, -4, 5, 4, legPhase ? C.fur : C.furDark);
+    if (img && img.complete && img.naturalWidth) {
+      ctx.save();
+      if (f === -1) {
+        ctx.translate(Math.round(sx + dw / 2), 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(img, 1, Math.round(sy - dh), Math.round(dw), Math.round(dh));
+      } else {
+        spr(img, sx - dw / 2, sy - dh, dw, dh);
+      }
+      ctx.restore();
     } else {
-      // Tucked while airborne.
-      px(-5, -6, 5, 4, C.furDark);
-      px(3, -6, 5, 4, C.furDark);
+      // Procedural fallback while sprites load.
+      ctx.save();
+      ctx.translate(Math.round(sx), Math.round(sy));
+      ctx.scale(f, 1);
+      px(-8, -24, 16, 20, C.fur);
+      px(2, -32, 14, 12, C.fur);
+      px(11, -29, 3, 3, C.eye);
+      ctx.restore();
     }
-
-    ctx.restore();
   }
 
   function render() {
     if (!ctx) return;
+    renderTick++;
     drawBackground();
     drawTrunk();
     for (const b of game.branches) drawBranch(b);
@@ -469,6 +529,8 @@
     canvas = $("game-canvas");
     ctx = canvas.getContext("2d");
     ctx.imageSmoothingEnabled = false;
+
+    loadSprites();
 
     $("btn-start").addEventListener("click", onStart);
     $("btn-pause").addEventListener("click", onPause);

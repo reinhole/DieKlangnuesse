@@ -96,14 +96,14 @@
       micActive = true;
       const btn = $("btn-mic");
       if (btn) {
-        btn.textContent = "🎤 Mic on";
+        btn.textContent = "Mic on";
         btn.disabled = true;
       }
       sampleMic();
     } catch (err) {
       // Permission denied or unavailable: silently keep the manual path.
       const btn = $("btn-mic");
-      if (btn) btn.textContent = "🎤 Mic unavailable";
+      if (btn) btn.textContent = "Mic unavailable";
     }
   }
 
