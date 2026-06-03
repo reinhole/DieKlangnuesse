@@ -161,7 +161,6 @@
     window.addEventListener("keydown", (e) => {
       if (e.key === "ArrowLeft") leftHeld = true;
       else if (e.key === "ArrowRight") rightHeld = true;
-      else if (e.key === " " || e.key === "ArrowUp") jumpQueued = true;
     });
     window.addEventListener("keyup", (e) => {
       if (e.key === "ArrowLeft") leftHeld = false;
