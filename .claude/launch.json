@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "klangnuesse",
+      "runtimeExecutable": "/usr/bin/env",
+      "runtimeArgs": ["PORT=3210", "node", "server.js"],
+      "port": 3210
+    }
+  ]
+}

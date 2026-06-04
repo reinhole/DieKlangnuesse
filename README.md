@@ -50,6 +50,25 @@ statischer HTTP-Server. Der Spielzustand steht **als lesbarer Text im DOM**
 konfigurierbar (`window.__config`). Details und Konventionen für die Weiterarbeit
 stehen in `CLAUDE.md`.
 
+## Doku & Entwickler-Tools
+
+| Datei | Inhalt |
+| --- | --- |
+| [`CLAUDE.md`](CLAUDE.md) | Projekt-Guide + Engine-Invarianten (für Menschen **und** Agenten). |
+| [`../CLAUDE.md`](../CLAUDE.md) | Bindender DOM-Test-Contract (`data-testid`s, Status-Werte, seedbarer Zufall). |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Engine-Interna: Koordinaten, Kamera, Audio, Asset-Pipeline. |
+| [`PLAN.md`](PLAN.md) | Ursprünglicher Entwurf (historisch, teilweise überholt). |
+
+```bash
+npm run check   # schneller, abhängigkeitsfreier Check des DOM-Contracts (data-testids)
+npm test        # vollständige Playwright-Suite
+```
+
+Für KI-Agenten liegt unter [`.claude/`](.claude/) zusätzlich: eine
+Permission-Allowlist, ein `PostToolUse`-Hook, der nach jeder Bearbeitung den
+DOM-Contract prüft (`scripts/check-contract.js`), und ein `game-tester`-Subagent,
+der die `window.__*`-Test-Hooks kennt.
+
 ---
 
 ### Wettbewerbs-Loesung

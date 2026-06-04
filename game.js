@@ -277,16 +277,55 @@
 
         const enemySpawnChance = Math.min(0.8, 0.4 + (game.level - 1) * 0.15);
         if (window.__rng.next() < enemySpawnChance) {
+          const rand = window.__rng.next();
+          let type = 'ant';
+          let w = 24;
+          let h = 20;
+          let maxFrames = 8;
+          let baseSpeed = 0.8;
+          let animSpeed = 0.15;
+          let particleColor = '#b5432f';
+
+          if (rand < 0.4) {
+            type = 'ant';
+            w = 24;
+            h = 20;
+            maxFrames = 8;
+            baseSpeed = 0.8;
+            animSpeed = 0.15;
+            particleColor = '#b5432f';
+          } else if (rand < 0.7) {
+            type = 'gator';
+            w = 28;
+            h = 18;
+            maxFrames = 4;
+            baseSpeed = 0.5;
+            animSpeed = 0.1;
+            particleColor = '#5c8f37';
+          } else {
+            type = 'grasshopper';
+            w = 26;
+            h = 22;
+            maxFrames = 4;
+            baseSpeed = 1.2;
+            animSpeed = 0.12;
+            particleColor = '#8fa33c';
+          }
+
           game.enemies.push({
+            type: type,
             x: cx,
             y: top,
-            w: 24,
-            h: 20,
-            vx: 0.8 + (game.level - 1) * 0.15,
+            w: w,
+            h: h,
+            vx: baseSpeed + (game.level - 1) * 0.15,
             facing: window.__rng.next() < 0.5 ? -1 : 1,
             minX: branch.x + 16,
             maxX: branch.x + branch.w - 16,
-            animFrame: 0
+            animFrame: 0,
+            maxFrames: maxFrames,
+            animSpeed: animSpeed,
+            particleColor: particleColor
           });
         }
       }
@@ -435,7 +474,9 @@
           e.x = e.maxX;
           e.facing = -1;
         }
-        e.animFrame = (e.animFrame + 0.15) % 8;
+        const animSpeed = e.animSpeed !== undefined ? e.animSpeed : 0.15;
+        const maxFrames = e.maxFrames !== undefined ? e.maxFrames : 8;
+        e.animFrame = (e.animFrame + animSpeed) % maxFrames;
 
         if (player.hurtTimer <= 0 && state === "Running") {
           const overlapX = Math.abs(player.x - e.x) < (player.w / 2 + e.w / 2 - 4);
@@ -448,7 +489,7 @@
               audio.playSFX('enemyDeath');
               player.vy = c.jumpImpulse * 0.7;
               game.score++;
-              spawnParticles(e.x, e.y + e.h / 2, 12, '#b5432f');
+              spawnParticles(e.x, e.y + e.h / 2, 12, e.particleColor || '#b5432f');
               onScore();
             } else {
               loseLife();
@@ -637,10 +678,13 @@
     for (let i = 1; i <= 8; i++) loadImg('idle' + i, '/SPRITES/player/idle/player-idle-' + i + '.png');
     for (let i = 1; i <= 6; i++) loadImg('run'  + i, '/SPRITES/player/run/player-run-'   + i + '.png');
     for (let i = 1; i <= 4; i++) loadImg('jump' + i, '/SPRITES/player/jump/player-jump-' + i + '.png');
+    for (let i = 1; i <= 2; i++) loadImg('crouch' + i, '/SPRITES/player/crouch/player-crouch-' + i + '.png');
     for (let i = 1; i <= 3; i++) loadImg('acorn' + i, '/SPRITES/misc/acorn/acorn-' + i + '.png');
     loadImg('branch3', '/ENVIRONMENT/props-sliced/branch-03.png');
     loadImg('branch5', '/ENVIRONMENT/props-sliced/branch-05.png');
     for (let i = 1; i <= 8; i++) loadImg('ant' + i, '/SPRITES/enemies/ant/ant-' + i + '.png');
+    for (let i = 1; i <= 4; i++) loadImg('gator' + i, '/SPRITES/enemies/gator/gator-' + i + '.png');
+    for (let i = 1; i <= 4; i++) loadImg('grasshopper' + i, '/SPRITES/enemies/grasshopper-idle/grasshopper-idle-' + i + '.png');
     for (let i = 1; i <= 2; i++) loadImg('hurt' + i, '/SPRITES/player/hurt/player-hurt-' + i + '.png');
     loadImg('tileset', '/ENVIRONMENT/tileset.png');
 
@@ -662,6 +706,13 @@
   // Render-local tick for animation — advances every frame, independent of
   // physicsStep so animations run even while paused or in Ready state.
   let renderTick = 0;
+
+  // Render-local squirrel animation state. These never touch game logic or the
+  // DOM — they only drive how the sprite is drawn, so they're free to react to
+  // the live player velocity for a smooth, responsive feel.
+  let animPrevGrounded = true; // for landing-impact detection
+  let runPhase = 0;            // run-cycle phase, advanced by actual speed
+  let landSquash = 0;          // 0..1, spikes on touchdown, springs back out
 
   // --- Rendering (read-only; never mutates state) -------------------------
   function px(x, y, w, h, color) {
@@ -839,10 +890,22 @@
   function drawEnemy(e) {
     const sx = e.x;
     const sy = toScreenY(e.y);
-    const frame = (Math.floor(e.animFrame) % 8) + 1;
-    const img = imgs['ant' + frame];
-    const dw = 32;
-    const dh = 32;
+    const type = e.type || 'ant';
+    const maxFrames = e.maxFrames || 8;
+    const frame = (Math.floor(e.animFrame) % maxFrames) + 1;
+    const img = imgs[type + frame];
+    
+    // Set custom drawing dimensions based on enemy type
+    let dw = 32;
+    let dh = 32;
+    if (type === 'gator') {
+      dw = 36;
+      dh = 32;
+    } else if (type === 'grasshopper') {
+      dw = 32;
+      dh = 32;
+    }
+
     if (img && img.complete && img.naturalWidth) {
       ctx.save();
       ctx.translate(Math.round(sx), Math.round(sy));
@@ -850,9 +913,31 @@
       ctx.drawImage(img, Math.round(-dw / 2), Math.round(-dh), Math.round(dw), Math.round(dh));
       ctx.restore();
     } else {
-      px(sx - 12, sy - 14, 24, 14, '#4a2e16');
-      px(sx - 8, sy - 18, 16, 6, '#4a2e16');
-      px(sx - 4, sy - 14, 8, 14, '#1a1208');
+      // Procedural fallback
+      ctx.save();
+      ctx.translate(Math.round(sx), Math.round(sy));
+      ctx.scale(e.facing, 1);
+      if (type === 'gator') {
+        // Draw alligator procedural fallback (greenish lizard-like body)
+        px(-16, -12, 32, 12, '#386923');
+        px(-8, -16, 16, 6, '#386923');
+        px(-12, -6, 4, 6, '#1b3b0d');
+        px(8, -6, 4, 6, '#1b3b0d');
+        px(6, -13, 2, 2, '#ebd534'); // eye
+      } else if (type === 'grasshopper') {
+        // Draw grasshopper procedural fallback (yellowish-green insect)
+        px(-12, -16, 24, 14, '#768c22');
+        px(-8, -22, 12, 8, '#768c22');
+        px(-10, -8, 3, 8, '#41520d');
+        px(4, -8, 3, 8, '#41520d');
+        px(2, -18, 2, 2, '#d44324'); // eye
+      } else {
+        // Ant fallback (local coordinates)
+        px(-12, -14, 24, 14, '#4a2e16');
+        px(-8, -18, 16, 6, '#4a2e16');
+        px(-4, -14, 8, 14, '#1a1208');
+      }
+      ctx.restore();
     }
   }
 
@@ -876,50 +961,89 @@
   }
 
   function drawSquirrel() {
-    // Flashing invincibility effect when hurt
-    if (player.hurtTimer > 0 && Math.floor(renderTick / 4) % 2 === 0) {
-      return;
-    }
+    const c = cfg();
+
+    // --- Landing-impact bookkeeping (render-local, no game-state mutation) ---
+    // The instant the feet touch down, kick a squash that springs back out over
+    // the next few frames. vy is already zeroed by physics on landing, so we use
+    // a fixed pop rather than reading the (now-zero) impact velocity.
+    if (player.grounded && !animPrevGrounded) landSquash = 1;
+    animPrevGrounded = player.grounded;
+    landSquash *= 0.78;
+    if (landSquash < 0.02) landSquash = 0;
+
+    // Flashing invincibility effect when hurt (blink off on alternate frames).
+    if (player.hurtTimer > 0 && Math.floor(renderTick / 4) % 2 === 0) return;
 
     const sx = player.x;
     const sy = toScreenY(player.y); // feet
     const f = player.facing; // 1 = right, -1 = left
 
-    const running = player.grounded && Math.abs(player.vx) > 0.2;
+    const speedRatio = clamp(Math.abs(player.vx) / c.moveSpeedMax, 0, 1);
     const airborne = !player.grounded;
+    const running = player.grounded && speedRatio > 0.06;
 
-    let prefix, count, fps;
-    if (player.hurtTimer > 0) { prefix = 'hurt'; count = 2; fps = 8;  }
-    else if (airborne)        { prefix = 'jump'; count = 4; fps = 8;  }
-    else if (running)         { prefix = 'run';  count = 6; fps = 12; }
-    else                      { prefix = 'idle'; count = 8; fps = 6;  }
+    // --- Pick the animation clip + frame -----------------------------------
+    let prefix, frame;
+    if (player.hurtTimer > 0) {
+      prefix = 'hurt';
+      frame = (Math.floor(renderTick / 8) % 2) + 1;
+    } else if (landSquash > 0.45 && player.grounded) {
+      // Brief crouch pose on touchdown — deeper crouch first, easing up.
+      prefix = 'crouch';
+      frame = landSquash > 0.7 ? 1 : 2;
+    } else if (airborne) {
+      // Curled spin while in the air; spin a touch faster the faster we fly.
+      prefix = 'jump';
+      const spinStep = Math.round(60 / (10 + 8 * clamp(Math.abs(player.vy) / c.jumpImpulse, 0, 1)));
+      frame = (Math.floor(renderTick / Math.max(1, spinStep)) % 4) + 1;
+    } else if (running) {
+      // Leg cycle scales with ACTUAL speed (volume-driven) → reactive: a quiet
+      // creep shuffles, a loud sprint churns.
+      const runFps = 8 + 14 * speedRatio; // 8..22 fps
+      runPhase += runFps / 60;
+      prefix = 'run';
+      frame = (Math.floor(runPhase) % 6) + 1;
+    } else {
+      prefix = 'idle';
+      frame = (Math.floor(renderTick / 10) % 8) + 1;
+      runPhase = 0;
+    }
 
-    const frame = (Math.floor(renderTick / Math.round(60 / fps)) % count) + 1;
+    // --- Squash & stretch (axis-aligned; pivots at the feet) ----------------
+    // Axis-aligned scaling keeps the pixel outline crisp (a rotated lean would
+    // shimmer under nearest-neighbour sampling).
+    let sxs = 1, sys = 1;
+    if (airborne) {
+      // Stretch tall through the fast parts of the arc, rounder near the apex.
+      const vRatio = clamp(Math.abs(player.vy) / c.jumpImpulse, 0, 1);
+      sys = 1 + 0.16 * vRatio;
+      sxs = 1 - 0.12 * vRatio;
+    }
+    if (landSquash > 0) {
+      // Squat wide on impact, springing back as it decays.
+      sys *= 1 - 0.30 * landSquash;
+      sxs *= 1 + 0.26 * landSquash;
+    }
+
     const img = imgs[prefix + frame];
-
     const dw = 64;
     const dh = Math.round(58 * (dw / 90)); // ≈ 41
 
+    ctx.save();
+    // Translate to the feet, then apply facing + squash so everything pivots
+    // there (x about the body centre, y about the ground contact).
+    ctx.translate(Math.round(sx), Math.round(sy));
+    ctx.scale(f * sxs, sys);
     if (img && img.complete && img.naturalWidth) {
-      ctx.save();
-      if (f === -1) {
-        ctx.translate(Math.round(sx + dw / 2), 0);
-        ctx.scale(-1, 1);
-        ctx.drawImage(img, 1, Math.round(sy - dh), Math.round(dw), Math.round(dh));
-      } else {
-        spr(img, sx - dw / 2, sy - dh, dw, dh);
-      }
-      ctx.restore();
+      ctx.drawImage(img, Math.round(-dw / 2), Math.round(-dh), dw, dh);
     } else {
       // Procedural fallback while sprites load.
-      ctx.save();
-      ctx.translate(Math.round(sx), Math.round(sy));
-      ctx.scale(f, 1);
       px(-8, -24, 16, 20, C.fur);
       px(2, -32, 14, 12, C.fur);
       px(11, -29, 3, 3, C.eye);
-      ctx.restore();
     }
+    ctx.restore();
   }
 
   function render() {
@@ -1014,6 +1138,9 @@
       get nuts() {
         return game.nuts;
       },
+      get enemies() {
+        return game.enemies;
+      },
       get cameraY() {
         return cameraY;
       },
@@ -1021,6 +1148,9 @@
     window.__step = (n) => {
       for (let i = 0; i < (n || 1); i++) physicsStep();
     };
+    // Read-only: paint one frame on demand. Handy for headless/CI snapshots
+    // where requestAnimationFrame is throttled while the tab is hidden.
+    window.__render = () => render();
   }
 
   if (document.readyState === "loading") {

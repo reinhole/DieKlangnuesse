@@ -1,5 +1,15 @@
 Plan: "Die Klangnüsse" — A Voice-Controlled Squirrel Tree-Climber
 
+> **Status: historical design doc (superseded in places).** This is the original
+> plan written before implementation. It still describes the core concept and
+> mechanics accurately, but the project has since diverged from it — most
+> notably it now ships **external pixel-art sprites and audio** (under
+> `Sunny-land-woods-files/`) instead of the "procedurally drawn, no external
+> asset files" approach described below. For the current, accurate picture use
+> [`README.md`](README.md), [`CLAUDE.md`](CLAUDE.md), and
+> [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Where this file conflicts with
+> those, they win.
+
  Context
 
  We're building a browser platformer for the workshop's creative

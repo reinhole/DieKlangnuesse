@@ -14,9 +14,24 @@ const TYPES = {
   '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
+  // Images
   '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
+  // Audio — must be correct or Safari refuses to play the bgm/SFX
+  // (an unknown type is served as octet-stream and the <audio> element
+  // silently fails to load it).
+  '.m4a': 'audio/mp4',
+  '.mp3': 'audio/mpeg',
+  '.ogg': 'audio/ogg',
+  '.wav': 'audio/wav',
+  // Fonts
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
 };
 
 const server = http.createServer((req, res) => {

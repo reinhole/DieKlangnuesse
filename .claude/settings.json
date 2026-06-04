@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(npm test)",
+      "Bash(npm run check)",
+      "Bash(npm install)",
+      "Bash(npm install --package-lock-only)",
+      "Bash(npx playwright test:*)",
+      "Bash(npx playwright install:*)",
+      "Bash(node server.js)",
+      "Bash(node scripts/check-contract.js:*)",
+      "Bash(PORT=:* node server.js)",
+      "Bash(curl -s http://localhost:*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/check-contract.js\" --quiet || exit 2"
+          }
+        ]
+      }
+    ]
+  }
+}

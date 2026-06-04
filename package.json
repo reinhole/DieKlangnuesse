@@ -4,14 +4,13 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "playwright test"
+    "test": "playwright test",
+    "check": "node scripts/check-contract.js"
   },
   "engines": {
     "node": ">=24.0.0"
   },
-  "dependencies": {
-    "pngjs": "^7.0.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@playwright/test": "^1.49.0"
   }

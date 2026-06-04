@@ -241,4 +241,23 @@ test('death screen is displayed on game over with stats and a functional reset b
   await expect(page.getByTestId('death-screen')).toHaveClass(/hidden/);
 });
 
+test('spawns ant, gator, and grasshopper enemies based on seeds', async ({ page }) => {
+  const getEnemyTypes = async (seed) => {
+    await boot(page, { seed, config: { nutsPerLevel: 30 } });
+    return await page.evaluate(() => {
+      return window.__game.enemies.map(e => e.type || 'ant');
+    });
+  };
+
+  const types1234 = await getEnemyTypes(1234);
+  const types9999 = await getEnemyTypes(9999);
+  const types5555 = await getEnemyTypes(5555);
+
+  const allTypes = new Set([...types1234, ...types9999, ...types5555]);
+  
+  expect(allTypes.has('ant')).toBe(true);
+  expect(allTypes.has('gator')).toBe(true);
+  expect(allTypes.has('grasshopper')).toBe(true);
+});
+
 
