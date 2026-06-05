@@ -193,21 +193,29 @@
   // --- World generation ---------------------------------------------------
   function generateLevel() {
     const c = cfg();
-    game.branches = [];
-    game.nuts = [];
-    game.enemies = [];
-    game.particles = [];
+    const isNewGame = !game.branches || game.branches.length === 0;
 
-    // Ground platform spanning the whole width.
-    game.branches.push({ x: 0, w: W, top: 40, ground: true });
+    if (isNewGame) {
+      game.branches = [];
+      game.nuts = [];
+      game.enemies = [];
+      game.particles = [];
+      // Ground platform spanning the whole width.
+      game.branches.push({ x: 0, w: W, top: 40, ground: true });
+    }
 
     const numNuts = c.nutsPerLevel + (game.level - 1);
     const spacingY = Math.min(110, c.branchSpacingV + (game.level - 1) * 2);
 
-    let nutIdCounter = 1;
+    let nutIdCounter = isNewGame ? 1 : (game.nuts.length > 0 ? game.nuts[game.nuts.length - 1].id + 1 : 1);
+    let startY = isNewGame ? 40 : game.topY;
+
+    if (game.level === 2 && !game.level2StartY) {
+      game.level2StartY = startY;
+    }
 
     for (let i = 0; i < numNuts; i++) {
-      const top = 40 + (i + 1) * spacingY;
+      const top = startY + (i + 1) * spacingY;
       
       const numPlatforms = window.__rng.next() < 0.5 ? 1 : 2;
       const leftOptions = [1, 2];
@@ -330,7 +338,7 @@
         }
       }
     }
-    game.topY = 40 + (numNuts + 1) * spacingY;
+    game.topY = startY + numNuts * spacingY;
     buildNutDOM();
   }
 
@@ -379,6 +387,18 @@
 
     if (player.hurtTimer > 0) player.hurtTimer--;
     if (game.levelUpTimer > 0) game.levelUpTimer--;
+
+    if (game.pendingLevelUp) {
+      if (game.pendingLevelUp === 2) {
+        if (game.level2StartY !== undefined && player.y >= game.level2StartY) {
+          game.levelUpTimer = 90;
+          game.pendingLevelUp = 0;
+        }
+      } else {
+        game.levelUpTimer = 90;
+        game.pendingLevelUp = 0;
+      }
+    }
 
     const d = window.Input.getDirection();
     let vol = window.Input.getVolume();
@@ -574,9 +594,8 @@
     const c = cfg();
     if (game.score >= game.level * c.nutsPerLevel) {
       game.level++;
-      game.levelUpTimer = 90; // show level-up banner for ~1.5s
+      game.pendingLevelUp = game.level;
       generateLevel(); // taller fresh section
-      placePlayerStart();
     }
   }
 
@@ -654,7 +673,8 @@
   
   const imgs = new Proxy(baseImgs, {
     get(target, prop) {
-      if (game.level >= 2 && winterImgs[prop] && winterImgs[prop].complete && winterImgs[prop].naturalWidth) {
+      const isWinter = game && game.level2StartY !== undefined && player.y >= game.level2StartY;
+      if (isWinter && winterImgs[prop] && winterImgs[prop].complete && winterImgs[prop].naturalWidth) {
         return winterImgs[prop];
       }
       return target[prop];
@@ -747,14 +767,14 @@
 
     drawBgLayer(imgs.bgClouds,    0.08, true);
     drawBgLayer(imgs.bgMountains, 0.18, true);
-    if (game.level < 2) {
+    const isWinter = game && game.level2StartY !== undefined && player.y >= game.level2StartY;
+    if (!isWinter) {
       drawBgLayer(imgs.bgTrees,     0.40, true);
     }
   }
 
   function drawTrunk() {
-    const img = baseImgs.tileset;
-    const hasTileset = img && img.complete && img.naturalWidth;
+    const hasTileset = baseImgs.tileset && baseImgs.tileset.complete && baseImgs.tileset.naturalWidth;
 
     if (hasTileset) {
       // Visible rows in world units
@@ -787,6 +807,8 @@
         // Trunk in tileset.png is columns 15 to 20 (6 tiles, 96px width)
         const sx = 15 * 16;
         const sy = sr * 16;
+
+        const img = baseImgs.tileset;
 
         // Draw centered at W/2 = 240
         const tx = W / 2 - 48;
@@ -863,7 +885,13 @@
     }
     const screenY = toScreenY(b.top);
     const pointsRight = b.pointsRight !== undefined ? b.pointsRight : (b.x + b.w / 2 > W / 2);
-    const raw = b.type === 3 ? imgs.branch3 : imgs.branch5;
+    const isWinterBranch = game && game.level2StartY !== undefined && b.top >= game.level2StartY;
+    let raw;
+    if (b.type === 3) {
+      raw = isWinterBranch && winterImgs.branch3 && winterImgs.branch3.complete && winterImgs.branch3.naturalWidth ? winterImgs.branch3 : baseImgs.branch3;
+    } else {
+      raw = isWinterBranch && winterImgs.branch5 && winterImgs.branch5.complete && winterImgs.branch5.naturalWidth ? winterImgs.branch5 : baseImgs.branch5;
+    }
 
     if (raw && raw.complete && raw.naturalWidth) {
       const dw = b.w;
