@@ -8,27 +8,6 @@
 </head>
 <body>
   <div class="game">
-    <header class="hud">
-      <h1 class="title">Die Klangnüsse</h1>
-      <div class="hud-row">
-        <div class="status-line">
-          Status: <span data-testid="game-status">Ready</span>
-        </div>
-        <div class="stats">
-          <span class="stat">Score: <span data-testid="score">0</span></span>
-          <span class="stat">Lives: <span data-testid="lives">3</span></span>
-          <span class="stat">Level: <span data-testid="level">1</span></span>
-          <span class="stat">Left: <span data-testid="nut-count">0</span></span>
-        </div>
-      </div>
-      <div class="hud-row controls-row">
-        <button data-testid="btn-pause" class="btn btn-pause" disabled>Pause</button>
-        <button data-testid="btn-reset" class="btn btn-reset">Reset</button>
-        <button data-testid="btn-mute" class="btn btn-mute">🔊 Mute</button>
-        <button data-testid="btn-mic" class="btn btn-mic">Mic</button>
-      </div>
-    </header>
-
     <div class="stage">
       <div class="canvas-container">
         <canvas
@@ -37,6 +16,63 @@
           width="480"
           height="640"
         ></canvas>
+
+        <aside class="sidebar">
+          <h1 class="title">Die Klangnüsse</h1>
+          
+          <!-- Status Section (visually omitted/hidden but kept in DOM for test suite) -->
+          <span data-testid="game-status" class="hidden">Ready</span>
+
+          <!-- Health Section (3 Hearts) -->
+          <div class="sidebar-section health-section">
+            <div class="hearts-container">
+              <div class="heart" data-heart="1">
+                <img src="svgs/heart.svg" class="heart-icon svg-inject" alt="Heart" />
+              </div>
+              <div class="heart" data-heart="2">
+                <img src="svgs/heart.svg" class="heart-icon svg-inject" alt="Heart" />
+              </div>
+              <div class="heart" data-heart="3">
+                <img src="svgs/heart.svg" class="heart-icon svg-inject" alt="Heart" />
+              </div>
+            </div>
+            <!-- Hidden test container for lives -->
+            <span data-testid="lives" class="hidden">3</span>
+          </div>
+
+          <!-- Level & Score Bar Section -->
+          <div class="sidebar-section progress-section">
+            <div class="level-indicator">
+              <span class="lvl-label">LVL</span>
+              <span class="lvl-val" data-testid="level">1</span>
+            </div>
+            <div class="score-bar-wrapper">
+              <div id="score-bar" class="score-bar">
+                <!-- Dynamic segments will be inserted here -->
+              </div>
+              <!-- Hidden test containers for score / remaining nuts -->
+              <span data-testid="score" class="hidden">0</span>
+              <span data-testid="nut-count" class="hidden">0</span>
+            </div>
+          </div>
+
+          <!-- Controls Section -->
+          <div class="sidebar-section controls-section">
+            <button data-testid="btn-pause" class="btn-pixel btn-pause" disabled aria-label="Pause">
+              <img src="svgs/pause.svg" class="icon-pause svg-inject" alt="Pause" />
+              <img src="svgs/play.svg" class="icon-play hidden svg-inject" alt="Play" />
+            </button>
+            <button data-testid="btn-reset" class="btn-pixel btn-reset" aria-label="Reset">
+              <img src="svgs/reset.svg" class="icon-reset svg-inject" alt="Reset" />
+            </button>
+            <button data-testid="btn-mute" class="btn-pixel btn-mute" aria-label="Mute">
+              <img src="svgs/mute.svg" class="icon-mute svg-inject" alt="Mute" />
+            </button>
+            <button data-testid="btn-mic" class="btn-pixel btn-mic" aria-label="Microphone">
+              <img src="svgs/mic.svg" class="icon-mic svg-inject" alt="Mic" />
+            </button>
+          </div>
+        </aside>
 
         <!-- Death Screen Overlay -->
         <div id="death-screen" class="overlay-screen hidden" data-testid="death-screen">
@@ -82,5 +118,27 @@
   <script src="rng.js"></script>
   <script src="input.js"></script>
   <script src="game.js"></script>
+  <script>
+    document.querySelectorAll('img.svg-inject').forEach(img => {
+      fetch(img.src)
+        .then(r => r.text())
+        .then(text => {
+          const div = document.createElement('div');
+          div.innerHTML = text;
+          const svg = div.querySelector('svg');
+          if (svg) {
+            Array.from(img.attributes).forEach(attr => {
+              if (attr.name === 'class') {
+                const classes = attr.value.split(' ').filter(c => c !== 'svg-inject');
+                svg.classList.add(...classes);
+              } else if (attr.name !== 'src' && attr.name !== 'alt') {
+                svg.setAttribute(attr.name, attr.value);
+              }
+            });
+            img.replaceWith(svg);
+          }
+        });
+    });
+  </script>
 </body>
 </html>

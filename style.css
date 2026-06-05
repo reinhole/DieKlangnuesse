@@ -8,6 +8,17 @@
   --accent-dark: #6b4423;
   --good: #2f6b36;
   --warn: #b5432f;
+
+  /* Decoupled heart theme variables */
+  --heart-color: #ff3b55;
+  --heart-highlight: #ffffff;
+  --heart-outline: #241404;
+}
+
+body.theme-winter {
+  --heart-color: #5ce1e6;       /* Ice blue heart */
+  --heart-highlight: #ffffff;   /* Pure white highlight */
+  --heart-outline: #112d4e;     /* Dark winter blue outline */
 }
 
 * {
@@ -28,83 +39,264 @@ body {
 
 .game {
   position: relative;
-  width: 100%;
+  width: 100vw;
   height: 100vh;
+  background: var(--bg);
+  overflow: hidden;
 }
 
-.hud {
+.sidebar {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 10;
-  background: #1a122899;
-  border-bottom: 3px solid var(--accent-dark);
-  padding: 6px 12px;
-  text-align: center;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  top: 16px;
+  left: 16px;
+  width: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  z-index: 2;
+  pointer-events: none; /* Let clicks pass through empty spaces */
 }
 
-.title {
-  margin: 0 0 4px;
-  font-size: 20px;
-  letter-spacing: 2px;
+.sidebar > * {
+  pointer-events: auto; /* Re-enable clicks on the actual UI elements */
+}
+
+.sidebar .title {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: 1px;
   color: var(--accent);
   text-shadow: 2px 2px 0 #000;
+  text-align: left;
+  line-height: 1.25;
 }
 
-.hud-row {
+.sidebar-section {
+  width: 100%;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* Hearts health styling */
+.hearts-container {
+  display: flex;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.heart {
+  width: 32px;
+  height: 28px;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.heart:not(.empty) {
+  animation: heartbeat 1.8s infinite ease-in-out;
+}
+
+.heart:nth-child(2) {
+  animation-delay: 0.25s;
+}
+
+.heart:nth-child(3) {
+  animation-delay: 0.5s;
+}
+
+.heart-icon {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+.heart-shape {
+  fill: var(--heart-color);
+  filter: drop-shadow(1px 0 0 var(--heart-outline))
+          drop-shadow(-1px 0 0 var(--heart-outline))
+          drop-shadow(0 1px 0 var(--heart-outline))
+          drop-shadow(0 -1px 0 var(--heart-outline));
+  transition: fill 0.3s;
+}
+
+.heart-highlight {
+  fill: var(--heart-highlight);
+  transition: fill 0.3s;
+}
+
+.heart.empty .heart-shape {
+  fill: rgba(0, 0, 0, 0.4);
+}
+
+.heart.empty .heart-highlight {
+  display: none;
+}
+
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+/* Level & Score Bar styling */
+.progress-section {
+  gap: 12px;
+}
+
+.level-indicator {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-weight: bold;
+}
+
+.lvl-label {
+  color: var(--ink);
+  opacity: 0.6;
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+.lvl-val {
+  color: var(--accent);
+  text-shadow: 1px 1px 0 #000;
+  font-size: 20px;
+}
+
+.score-bar-wrapper {
+  width: 100%;
+}
+
+.score-bar {
+  display: flex;
+  gap: 2px;
+  background: var(--bg);
+  border: 2px solid var(--accent-dark);
+  border-radius: 4px;
+  padding: 3px;
+  height: 22px;
+  width: 100%;
+}
+
+.score-segment {
+  flex: 1;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 1px;
+  box-shadow: inset 0 1px 0 rgba(0,0,0,0.5);
+  transition: background-color 0.1s steps(2);
+}
+
+.score-segment.filled {
+  background: var(--accent);
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+/* Controls section button styling */
+.controls-section {
+  flex-direction: row;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  gap: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
+  width: 100%;
+}
+
+.btn-pixel {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
   justify-content: center;
   align-items: center;
-  gap: 6px 16px;
-  margin-bottom: 4px;
+  background: var(--panel-light);
+  border: 2px solid var(--accent-dark);
+  border-radius: 4px;
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,0.2), 0 2px 0 rgba(0,0,0,0.5);
+  transition: transform 0.1s, background-color 0.1s;
 }
 
-.status-line {
-  font-size: 15px;
+.btn-pixel:hover:not(:disabled) {
+  background: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,0.2), 0 4px 0 rgba(0,0,0,0.5);
 }
 
-.status-line span {
-  color: var(--accent);
-  font-weight: bold;
+.btn-pixel:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,0.2), 0 0 0 rgba(0,0,0,0.5);
 }
 
-.stats {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 4px 14px;
-  font-size: 13px;
+.btn-pixel:disabled {
+  opacity: 0.5;
+  filter: grayscale(1);
+  cursor: not-allowed;
 }
 
-.stat span {
-  color: var(--accent);
-  font-weight: bold;
+.btn-pixel svg {
+  width: 18px;
+  height: 18px;
+  display: block;
 }
 
-.controls-row {
-  gap: 8px;
-  margin-bottom: 0;
+.btn-reset {
+  background: none;
+}
+
+.btn-reset:hover:not(:disabled) {
+  background: none;
+  color: var(--warn);
+}
+
+.btn-mute .mute-slash {
+  display: none;
+}
+
+.btn-mute.muted .mute-slash {
+  display: block;
+}
+
+.btn-mute.muted svg {
+  color: var(--warn);
+}
+
+.btn-mic.mic-on svg {
+  color: var(--good);
+  animation: micPulse 1.5s infinite ease-in-out;
+}
+
+.btn-mic.mic-unavailable svg {
+  color: var(--warn);
+  opacity: 0.6;
+}
+
+@keyframes micPulse {
+  0%, 100% { filter: drop-shadow(0 0 1px var(--good)); }
+  50% { filter: drop-shadow(0 0 5px var(--good)); }
 }
 
 .stage {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
+  position: relative;
+  width: 100%;
+  height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
+  z-index: 0;
 }
 
 .canvas-container {
   position: relative;
   max-width: 100%;
-  max-height: 100%;
+  max-height: 100vh;
   width: auto;
-  height: 100vh;
+  height: 100%;
   aspect-ratio: 480 / 640;
 }
 

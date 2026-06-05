@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+  <rect x="2" y="6" width="4" height="4" fill="currentColor" />
+  <rect x="6" y="5" width="2" height="6" fill="currentColor" />
+  <rect x="8" y="4" width="2" height="8" fill="currentColor" />
+  <rect x="10" y="3" width="2" height="10" fill="currentColor" />
+  <line class="mute-slash" x1="1" y1="15" x2="15" y2="1" stroke="var(--warn)" stroke-width="2" />
+</svg>

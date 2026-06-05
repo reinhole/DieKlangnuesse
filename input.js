@@ -24,6 +24,8 @@
   let rightHeld = false;
   let jumpQueued = false; // one-shot from the Jump button / key / __queueJump
   let jumpHeld = false;
+  let crouchHeld = false;
+  let crouchOverride = null;
 
   // --- Mic state ----------------------------------------------------------
   let micActive = false;
@@ -97,14 +99,18 @@
       micActive = true;
       const btn = $("btn-mic");
       if (btn) {
-        btn.textContent = "Mic on";
+        btn.classList.add("mic-on");
+        btn.setAttribute("aria-label", "Microphone on");
         btn.disabled = true;
       }
       sampleMic();
     } catch (err) {
       // Permission denied or unavailable: silently keep the manual path.
       const btn = $("btn-mic");
-      if (btn) btn.textContent = "Mic unavailable";
+      if (btn) {
+        btn.classList.add("mic-unavailable");
+        btn.setAttribute("aria-label", "Microphone unavailable");
+      }
     }
   }
 
@@ -143,6 +149,7 @@
     window.addEventListener("keydown", (e) => {
       if (e.key === "ArrowLeft") leftHeld = true;
       else if (e.key === "ArrowRight") rightHeld = true;
+      else if (e.key === "ArrowDown" || e.key === "s" || e.key === "S") crouchHeld = true;
       else if (e.key === " " || e.key === "ArrowUp") {
         jumpQueued = true;
         jumpHeld = true;
@@ -151,6 +158,7 @@
     window.addEventListener("keyup", (e) => {
       if (e.key === "ArrowLeft") leftHeld = false;
       else if (e.key === "ArrowRight") rightHeld = false;
+      else if (e.key === "ArrowDown" || e.key === "s" || e.key === "S") crouchHeld = false;
       else if (e.key === " " || e.key === "ArrowUp") jumpHeld = false;
     });
 
@@ -168,12 +176,16 @@
   window.__queueJump = () => {
     jumpQueued = true;
   };
+  window.__setCrouch = (c) => {
+    crouchOverride = c === null ? null : !!c;
+  };
 
   const isJumpHeld = () => jumpHeld || getVolume() >= jumpThreshold();
+  const isCrouchHeld = () => crouchOverride !== null ? crouchOverride : crouchHeld;
   const isMicActive = () => micActive;
   const isKeyboardMoving = () => leftHeld || rightHeld;
 
-  window.Input = { getVolume, getDirection, consumeJump, isJumpHeld, enableMic, updateMeter, isMicActive, isKeyboardMoving, lastJumpInfo: { source: null, volume: 0 } };
+  window.Input = { getVolume, getDirection, consumeJump, isJumpHeld, isCrouchHeld, enableMic, updateMeter, isMicActive, isKeyboardMoving, lastJumpInfo: { source: null, volume: 0 } };
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", bind);

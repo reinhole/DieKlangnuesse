@@ -260,4 +260,119 @@ test('spawns ant, gator, and grasshopper enemies based on seeds', async ({ page 
   expect(allTypes.has('grasshopper')).toBe(true);
 });
 
+test('enemies do not leave the screen and bounce on walls', async ({ page }) => {
+  await boot(page, { seed: 1234, config: { nutsPerLevel: 30 } });
+  const W = 480;
+  const cameraOffX = 80;
+  
+  for (let i = 0; i < 200; i++) {
+    await step(page, 1);
+    const enemiesInfo = await page.evaluate(() => {
+      return window.__game.enemies.map(e => ({ x: e.x, w: e.w, type: e.type }));
+    });
+    for (const e of enemiesInfo) {
+      const leftEdge = e.x - e.w / 2;
+      const rightEdge = e.x + e.w / 2;
+      expect(leftEdge).toBeGreaterThanOrEqual(cameraOffX);
+      expect(rightEdge).toBeLessThanOrEqual(W - cameraOffX);
+    }
+  }
+});
+
+test('crouching slows down horizontal speed and allows phasing through platforms', async ({ page }) => {
+  // Use config that places platforms at predictable locations
+  await boot(page, { seed: 1234, config: { branchOffsetX: 0, runThreshold: 0.1 } });
+
+  // 1. Verify speed reduction:
+  // Set direction and volume to move horizontal
+  await setDirection(page, 1);
+  await setVolume(page, 0.5);
+
+  // Turn on crouching
+  await page.evaluate(() => window.__setCrouch(true));
+
+  const getPlayerX = () => page.evaluate(() => window.__game.player.x);
+  const getPlayerY = () => page.evaluate(() => window.__game.player.y);
+  
+  const startX = await getPlayerX();
+  await step(page, 10);
+  
+  const endX = await getPlayerX();
+  // Horizontal position should have changed (walking is not completely inhibited)
+  expect(endX).toBeGreaterThan(startX);
+  // But it should be slower (moved 9 units instead of the normal 30 units)
+  const deltaX = endX - startX;
+  expect(deltaX).toBeLessThan(15);
+  expect(deltaX).toBeGreaterThan(5);
+
+  // 2. Verify platform phasing:
+  // Reset direction inputs to stay centered, but keep crouching
+  await setDirection(page, 0);
+  await setVolume(page, 0);
+
+  const branchTop = await page.evaluate(() => {
+    const firstBranch = window.__game.branches.find(b => !b.ground);
+    return firstBranch ? firstBranch.top : null;
+  });
+  expect(branchTop).not.toBeNull();
+
+  // Teleport player above branchTop, descending, and let them fall down with crouch active
+  await page.evaluate((top) => {
+    const p = window.__game.player;
+    p.y = top + 20;
+    p.vy = -2;
+    p.grounded = false;
+  }, branchTop);
+
+  // Step enough ticks to pass branchTop
+  await step(page, 20);
+
+  const currentY = await getPlayerY();
+  // Player should have fallen through the branch platform (below its top)
+  expect(currentY).toBeLessThan(branchTop);
+
+  // 3. Verify they land when crouch is turned off:
+  // Turn off crouching
+  await page.evaluate(() => window.__setCrouch(false));
+
+  // Teleport player above branchTop, descending
+  await page.evaluate((top) => {
+    const p = window.__game.player;
+    p.y = top + 20;
+    p.vy = -2;
+    p.grounded = false;
+  }, branchTop);
+
+  await step(page, 20);
+  const landedY = await getPlayerY();
+  // Player should have landed precisely on the branch platform
+  expect(landedY).toBe(branchTop);
+});
+
+test('defeating an enemy awards 1 point', async ({ page }) => {
+  await boot(page, { seed: 1234, config: { nutsPerLevel: 30 } });
+
+  // Teleport player directly above the first enemy and make them fall down
+  await page.evaluate(() => {
+    const enemy = window.__game.enemies[0];
+    // Find the nut on the same branch as this enemy
+    const matchingNut = window.__game.nuts.find(n => Math.abs(n.x - enemy.x) < 5 && Math.abs(n.y - (enemy.y + 16)) < 5);
+    if (matchingNut) {
+      matchingNut.collected = true;
+    }
+    const player = window.__game.player;
+    player.x = enemy.x;
+    player.y = enemy.y + enemy.h + 5;
+    player.vy = -3;
+    player.grounded = false;
+  });
+
+  // Advance physics steps to collide and trigger squish
+  await step(page, 5);
+
+  // Verify that score is updated to 1
+  await expect(page.getByTestId('score')).toHaveText('1');
+});
+
+
 

@@ -57,7 +57,8 @@
       }
       const el = document.querySelector('[data-testid="btn-mute"]');
       if (el) {
-        el.textContent = this.muted ? "🔇 Unmute" : "🔊 Mute";
+        el.classList.toggle('muted', this.muted);
+        el.setAttribute('aria-label', this.muted ? "Unmute" : "Mute");
       }
     }
 
@@ -153,7 +154,7 @@
     vx: 0,
     vy: 0,
     w: 24,
-    h: 28,
+    h: 20,
     grounded: true,
     facing: 1,
     lastSafe: { x: W / 2, y: 40 },
@@ -161,6 +162,32 @@
     airVx: 0,
     hurtTimer: 0,
   };
+
+  let themeColors = {
+    heartColor: '#ff3b55',
+    heartHighlight: '#ffffff',
+    heartOutline: '#241404'
+  };
+
+  function updateThemeClass() {
+    const isWinter = game && game.level2StartY !== undefined && player.y >= game.level2StartY;
+    const hasClass = document.body.classList.contains("theme-winter");
+    if (isWinter !== hasClass) {
+      if (isWinter) {
+        document.body.classList.add("theme-winter");
+      } else {
+        document.body.classList.remove("theme-winter");
+      }
+      updateThemeColors();
+    }
+  }
+
+  function updateThemeColors() {
+    const style = getComputedStyle(document.documentElement);
+    themeColors.heartColor = style.getPropertyValue('--heart-color').trim() || '#ff3b55';
+    themeColors.heartHighlight = style.getPropertyValue('--heart-highlight').trim() || '#ffffff';
+    themeColors.heartOutline = style.getPropertyValue('--heart-outline').trim() || '#241404';
+  }
 
   const $ = (id) => document.querySelector(`[data-testid="${id}"]`);
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -186,7 +213,18 @@
     const pause = $("btn-pause");
     if (pause) {
       pause.disabled = !(running || paused);
-      pause.textContent = paused ? "Resume" : "Pause";
+      pause.setAttribute("aria-label", paused ? "Resume" : "Pause");
+      const iconPlay = pause.querySelector(".icon-play");
+      const iconPause = pause.querySelector(".icon-pause");
+      if (iconPlay && iconPause) {
+        if (paused) {
+          iconPlay.classList.remove("hidden");
+          iconPause.classList.add("hidden");
+        } else {
+          iconPlay.classList.add("hidden");
+          iconPause.classList.remove("hidden");
+        }
+      }
     }
   }
 
@@ -281,7 +319,8 @@
         game.branches.push(branch);
         
         const cx = bx + branchWidth / 2;
-        game.nuts.push({ x: cx, y: top + 16, collected: false, id: nutIdCounter++ });
+        const isHeart = (nutIdCounter > 1) && (window.__rng.next() < 0.10);
+        game.nuts.push({ x: cx, y: top + 16, collected: false, id: nutIdCounter++, isHeart: isHeart });
 
         const enemySpawnChance = Math.min(0.8, 0.4 + (game.level - 1) * 0.15);
         if (window.__rng.next() < enemySpawnChance) {
@@ -296,24 +335,24 @@
 
           if (rand < 0.4) {
             type = 'ant';
-            w = 24;
-            h = 20;
+            w = 26;
+            h = 23;
             maxFrames = 8;
             baseSpeed = 0.8;
             animSpeed = 0.15;
             particleColor = '#b5432f';
           } else if (rand < 0.7) {
             type = 'gator';
-            w = 28;
-            h = 18;
+            w = 20;
+            h = 26;
             maxFrames = 4;
             baseSpeed = 0.5;
             animSpeed = 0.1;
             particleColor = '#5c8f37';
           } else {
             type = 'grasshopper';
-            w = 26;
-            h = 22;
+            w = 21;
+            h = 20;
             maxFrames = 4;
             baseSpeed = 1.2;
             animSpeed = 0.12;
@@ -360,9 +399,11 @@
     if (window.__rng) {
       window.__rng.setSeed(window.__rng.seed);
     }
-    game = { score: 0, lives: cfg().startLives, level: 1, enemies: [], particles: [], levelUpTimer: 0 };
+    game = { score: 0, lives: Math.min(3, cfg().startLives), level: 1, enemies: [], particles: [], floatingTexts: [], levelUpTimer: 0 };
     generateLevel();
     placePlayerStart();
+    updateThemeClass();
+    updateThemeColors();
     syncDOM();
   }
 
@@ -377,6 +418,31 @@
         life: 20
       });
     }
+  }
+
+  function spawnHeartParticles(x, y) {
+    for (let i = 0; i < 15; i++) {
+      game.particles.push({
+        x: x, y: y,
+        vx: (window.__rng.next() - 0.5) * 3,
+        vy: (window.__rng.next() * 2 + 1), // fountain burst upwards
+        color: window.__rng.next() < 0.75 ? themeColors.heartColor : themeColors.heartHighlight,
+        size: window.__rng.next() * 3 + 2,
+        life: 25 + Math.floor(window.__rng.next() * 15)
+      });
+    }
+  }
+
+  function spawnFloatingText(x, y, text) {
+    if (!game.floatingTexts) game.floatingTexts = [];
+    game.floatingTexts.push({
+      x: x,
+      y: y,
+      text: text,
+      vy: 1.0, // floats upward in world coordinates
+      life: 30,
+      maxLife: 30
+    });
   }
 
   // --- Physics (the ONLY place state changes) -----------------------------
@@ -408,7 +474,10 @@
     const runVol = Math.min(1, vol / (c.runThreshold != null ? c.runThreshold : 0.4));
 
     // Horizontal speed logic:
-    if (!player.grounded && player.isVoiceJumping) {
+    if (window.Input.isCrouchHeld()) {
+      player.vx = d * (c.moveSpeedMax * 0.3) * runVol;
+      player.airVx = player.vx;
+    } else if (!player.grounded && player.isVoiceJumping) {
       if (d !== 0) {
         player.vx = d * c.moveSpeedMax * runVol;
       } else {
@@ -468,6 +537,9 @@
     player.grounded = false;
     if (player.vy <= 0) {
       for (const b of game.branches) {
+        if (window.Input.isCrouchHeld() && !b.ground) {
+          continue;
+        }
         const overlapX =
           player.x + player.w / 2 > b.x && player.x - player.w / 2 < b.x + b.w;
         if (overlapX && prevY >= b.top && player.y <= b.top) {
@@ -486,12 +558,14 @@
     if (game.enemies) {
       for (let idx = game.enemies.length - 1; idx >= 0; idx--) {
         const e = game.enemies[idx];
+        const effectiveMinX = Math.max(e.minX, cameraOffX + e.w / 2);
+        const effectiveMaxX = Math.min(e.maxX, W - cameraOffX - e.w / 2);
         e.x += e.vx * e.facing;
-        if (e.x <= e.minX) {
-          e.x = e.minX;
+        if (e.x <= effectiveMinX) {
+          e.x = effectiveMinX;
           e.facing = 1;
-        } else if (e.x >= e.maxX) {
-          e.x = e.maxX;
+        } else if (e.x >= effectiveMaxX) {
+          e.x = effectiveMaxX;
           e.facing = -1;
         }
         const animSpeed = e.animSpeed !== undefined ? e.animSpeed : 0.15;
@@ -510,6 +584,7 @@
               player.vy = c.jumpImpulse * 0.7;
               game.score++;
               spawnParticles(e.x, e.y + e.h / 2, 12, e.particleColor || '#b5432f');
+              spawnFloatingText(e.x, e.y + e.h + 5, "+1");
               onScore();
             } else {
               loseLife();
@@ -530,6 +605,15 @@
       game.particles = game.particles.filter(p => p.life > 0);
     }
 
+    // Floating texts update
+    if (game.floatingTexts) {
+      for (const ft of game.floatingTexts) {
+        ft.y += ft.vy;
+        ft.life--;
+      }
+      game.floatingTexts = game.floatingTexts.filter(ft => ft.life > 0);
+    }
+
     // Camera: smooth follow with snap upward, slow drift downward.
     const targetCamY = Math.max(0, player.y - c.followOffset);
     if (targetCamY > cameraY) {
@@ -541,7 +625,7 @@
     // Falling below the viewport bottom costs a life.
     if (player.y < cameraY) loseLife();
 
-    // Nut collection.
+    // Nut/Heart collection.
     for (const nut of game.nuts) {
       if (nut.collected) continue;
       const dx = nut.x - player.x;
@@ -549,8 +633,14 @@
       if (Math.abs(dx) < 22 && Math.abs(dy) < 26) {
         nut.collected = true;
         game.score++;
-        audio.playSFX('item');
-        spawnParticles(nut.x, nut.y, 10, '#e8c89a');
+        if (nut.isHeart) {
+          game.lives = Math.min(3, game.lives + 1);
+          audio.playSFX('item');
+          spawnHeartParticles(nut.x, nut.y);
+        } else {
+          audio.playSFX('item');
+          spawnParticles(nut.x, nut.y, 10, '#e8c89a');
+        }
         onScore();
       }
     }
@@ -613,10 +703,53 @@
 
   function syncDOM() {
     if (!game) return;
+    updateThemeClass();
 
     $("score").textContent = String(game.score);
     $("lives").textContent = String(game.lives);
     $("level").textContent = String(game.level);
+
+    // Sync 3 hearts visual display
+    const hearts = document.querySelectorAll(".hearts-container .heart");
+    hearts.forEach((heart, idx) => {
+      if (idx < game.lives) {
+        heart.classList.remove("empty");
+      } else {
+        heart.classList.add("empty");
+      }
+    });
+
+    // Sync level badge
+    const lvlVal = document.querySelector(".level-indicator .lvl-val");
+    if (lvlVal) lvlVal.textContent = String(game.level);
+
+    // Sync dynamic score bar segments
+    const scoreBar = document.getElementById("score-bar");
+    if (scoreBar) {
+      const c = cfg();
+      const totalNuts = c.nutsPerLevel;
+      const gained = game.score - (game.level - 1) * totalNuts;
+
+      if (scoreBar.children.length !== totalNuts) {
+        scoreBar.innerHTML = "";
+        for (let i = 0; i < totalNuts; i++) {
+          const segment = document.createElement("div");
+          segment.className = "score-segment";
+          scoreBar.appendChild(segment);
+        }
+      }
+
+      for (let i = 0; i < totalNuts; i++) {
+        const seg = scoreBar.children[i];
+        if (seg) {
+          if (i < gained) {
+            seg.classList.add("filled");
+          } else {
+            seg.classList.remove("filled");
+          }
+        }
+      }
+    }
 
     const pe = $("player");
     if (pe) {
@@ -724,7 +857,7 @@
   }
 
   // Render-local tick for animation — advances every frame, independent of
-  // physicsStep so animations run even while paused or in Ready state.
+  // physicsStep so animations run in Ready state but freeze when Paused.
   let renderTick = 0;
 
   // Render-local squirrel animation state. These never touch game logic or the
@@ -917,7 +1050,7 @@
     }
   }
 
-  function drawEnemy(e) {
+    function drawEnemy(e) {
     const sx = e.x;
     const sy = toScreenY(e.y);
     const type = e.type || 'ant';
@@ -925,22 +1058,23 @@
     const frame = (Math.floor(e.animFrame) % maxFrames) + 1;
     const img = imgs[type + frame];
     
-    // Set custom drawing dimensions based on enemy type
-    let dw = 32;
-    let dh = 32;
+    let dw, dh, offX, offY;
     if (type === 'gator') {
-      dw = 36;
-      dh = 32;
+      dw = 28; dh = 29;
+      offX = -14; offY = -27;
     } else if (type === 'grasshopper') {
-      dw = 32;
-      dh = 32;
+      dw = 36; dh = 32;
+      offX = -17; offY = -22;
+    } else { // ant
+      dw = 30; dh = 25;
+      offX = -14; offY = -24;
     }
 
     if (img && img.complete && img.naturalWidth) {
       ctx.save();
       ctx.translate(Math.round(sx), Math.round(sy));
       ctx.scale(e.facing, 1);
-      ctx.drawImage(img, Math.round(-dw / 2), Math.round(-dh), Math.round(dw), Math.round(dh));
+      ctx.drawImage(img, Math.round(offX), Math.round(offY), Math.round(dw), Math.round(dh));
       ctx.restore();
     } else {
       // Procedural fallback
@@ -948,26 +1082,52 @@
       ctx.translate(Math.round(sx), Math.round(sy));
       ctx.scale(e.facing, 1);
       if (type === 'gator') {
-        // Draw alligator procedural fallback (greenish lizard-like body)
-        px(-16, -12, 32, 12, '#386923');
-        px(-8, -16, 16, 6, '#386923');
-        px(-12, -6, 4, 6, '#1b3b0d');
-        px(8, -6, 4, 6, '#1b3b0d');
-        px(6, -13, 2, 2, '#ebd534'); // eye
+        px(-10, -26, 20, 26, '#386923');
       } else if (type === 'grasshopper') {
-        // Draw grasshopper procedural fallback (yellowish-green insect)
-        px(-12, -16, 24, 14, '#768c22');
-        px(-8, -22, 12, 8, '#768c22');
-        px(-10, -8, 3, 8, '#41520d');
-        px(4, -8, 3, 8, '#41520d');
-        px(2, -18, 2, 2, '#d44324'); // eye
+        px(-10, -20, 21, 20, '#768c22');
       } else {
-        // Ant fallback (local coordinates)
-        px(-12, -14, 24, 14, '#4a2e16');
-        px(-8, -18, 16, 6, '#4a2e16');
-        px(-4, -14, 8, 14, '#1a1208');
+        px(-13, -23, 26, 23, '#4a2e16');
       }
       ctx.restore();
+    }
+  }
+
+  function drawHeart(sx, sy) {
+    const bob = Math.sin(renderTick * 0.08) * 3;
+    const centerY = sy + bob;
+    
+    // 13x11 heart matrix
+    const matrix = [
+      [0,0,1,1,1,0,0,0,1,1,1,0,0],
+      [0,1,2,2,2,1,0,1,2,2,2,1,0],
+      [1,2,3,2,2,2,1,2,2,2,2,2,1],
+      [1,2,2,2,2,2,2,2,2,2,2,2,1],
+      [1,2,2,2,2,2,2,2,2,2,2,2,1],
+      [0,1,2,2,2,2,2,2,2,2,2,1,0],
+      [0,0,1,2,2,2,2,2,2,2,1,0,0],
+      [0,0,0,1,2,2,2,2,2,1,0,0,0],
+      [0,0,0,0,1,2,2,2,1,0,0,0,0],
+      [0,0,0,0,0,1,2,1,0,0,0,0,0],
+      [0,0,0,0,0,0,1,0,0,0,0,0,0]
+    ];
+    
+    const colors = {
+      1: themeColors.heartOutline,
+      2: themeColors.heartColor,
+      3: themeColors.heartHighlight
+    };
+    
+    const startX = Math.round(sx - 6);
+    const startY = Math.round(centerY - 5);
+    
+    for (let r = 0; r < matrix.length; r++) {
+      const row = matrix[r];
+      for (let c = 0; c < row.length; c++) {
+        const val = row[c];
+        if (val !== 0) {
+          px(startX + c, startY + r, 1, 1, colors[val]);
+        }
+      }
     }
   }
 
@@ -975,6 +1135,11 @@
     if (nut.collected) return;
     const sx = nut.x;
     const sy = toScreenY(nut.y);
+
+    if (nut.isHeart) {
+      drawHeart(sx, sy);
+      return;
+    }
 
     // Slower animation: advance one frame every 12 render ticks (was 4).
     const frame = (Math.floor(renderTick / 12) % 3) + 1;
@@ -988,6 +1153,28 @@
       px(sx - 7, sy - 12, 14, 6, C.nutCap);
       px(sx - 1, sy - 16, 3, 5, C.nutCap);
     }
+  }
+
+  function drawFloatingText(ft) {
+    const sx = ft.x;
+    const sy = toScreenY(ft.y);
+    const alpha = ft.life / ft.maxLife;
+    
+    ctx.save();
+    ctx.font = "bold 8px 'Courier New', monospace";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    
+    // Black outline for legibility
+    ctx.strokeStyle = `rgba(0, 0, 0, ${alpha})`;
+    ctx.lineWidth = 2;
+    ctx.strokeText(ft.text, sx, sy);
+    
+    // White fill
+    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+    ctx.fillText(ft.text, sx, sy);
+    
+    ctx.restore();
   }
 
   function drawSquirrel() {
@@ -1018,6 +1205,11 @@
     if (player.hurtTimer > 0) {
       prefix = 'hurt';
       frame = (Math.floor(renderTick / 8) % 2) + 1;
+    } else if (window.Input.isCrouchHeld()) {
+      prefix = 'crouch';
+      const isMoving = Math.abs(player.vx) > 0.05;
+      const speed = isMoving ? 8 : 12;
+      frame = (Math.floor(renderTick / speed) % 2) + 1;
     } else if (landSquash > 0.45 && player.grounded) {
       // Brief crouch pose on touchdown — deeper crouch first, easing up.
       prefix = 'crouch';
@@ -1057,8 +1249,8 @@
     }
 
     const img = imgs[prefix + frame];
-    const dw = 64;
-    const dh = Math.round(58 * (dw / 90)); // ≈ 41
+    const dw = 72;
+    const dh = 46;
 
     ctx.save();
     // Translate to the feet, then apply facing + squash so everything pivots
@@ -1066,7 +1258,8 @@
     ctx.translate(Math.round(sx), Math.round(sy));
     ctx.scale(f * sxs, sys);
     if (img && img.complete && img.naturalWidth) {
-      ctx.drawImage(img, Math.round(-dw / 2), Math.round(-dh), dw, dh);
+      // Offset matches content center (-29) and bottom (-38)
+      ctx.drawImage(img, -29, -38, dw, dh);
     } else {
       // Procedural fallback while sprites load.
       px(-8, -24, 16, 20, C.fur);
@@ -1078,7 +1271,9 @@
 
   function render() {
     if (!ctx) return;
-    renderTick++;
+    if (state !== "Paused") {
+      renderTick++;
+    }
 
     // Apply zoom: scale the canvas context so ZOOM world units fill each canvas pixel.
     ctx.save();
@@ -1091,6 +1286,9 @@
     for (const nut of game.nuts) drawNut(nut);
     for (const p of game.particles || []) {
       px(p.x - p.size / 2, toScreenY(p.y) - p.size / 2, p.size, p.size, p.color);
+    }
+    if (game.floatingTexts) {
+      for (const ft of game.floatingTexts) drawFloatingText(ft);
     }
     drawSquirrel();
     ctx.restore();
@@ -1170,6 +1368,9 @@
       },
       get enemies() {
         return game.enemies;
+      },
+      get branches() {
+        return game.branches;
       },
       get cameraY() {
         return cameraY;
