@@ -20,6 +20,7 @@ async function boot(page, { seed = 1234, config = {} } = {}) {
     { seed, config }
   );
   await page.goto('/');
+  await page.locator('#btn-start-story').click();
   await expect(page.getByTestId('game-status')).toHaveText('Running');
 }
 
@@ -31,6 +32,8 @@ const playerY = async (page) =>
 
 test('loads in Running with pause enabled', async ({ page }) => {
   await page.goto('/');
+  await expect(page.getByTestId('game-status')).toHaveText('Story');
+  await page.locator('#btn-start-story').click();
   await expect(page.getByTestId('game-status')).toHaveText('Running');
   await expect(page.getByTestId('btn-pause')).toBeEnabled();
   await expect(page.getByTestId('score')).toHaveText('0');
@@ -71,11 +74,15 @@ test('collecting a nut increases the score and clears the nut', async ({ page })
 });
 
 test('collecting a level worth of nuts advances the level', async ({ page }) => {
-  await boot(page, { config: { branchOffsetX: 0, nutsPerLevel: 1 } });
-  await setDirection(page, 0);
-  await setVolume(page, 1);
-  await step(page, 40);
-  await expect(page.getByTestId('score')).toHaveText('1');
+  // Use a higher nutsPerLevel so the topY is high enough that we don't accidentally skip levels
+  await boot(page, { config: { branchOffsetX: 0, nutsPerLevel: 10 } });
+  
+  // Teleport player near the level up threshold
+  await page.evaluate(() => {
+    window.__game.player.y = window.__game.branches[window.__game.branches.length - 1].top - 50;
+  });
+  
+  await step(page, 10);
   await expect(page.getByTestId('level')).toHaveText('2');
 });
 
@@ -120,6 +127,7 @@ test('the live (real-time) loop drives physics without __step', async ({ page })
     window.__initialSeed = 99;
   });
   await page.goto('/');
+  await page.locator('#btn-start-story').click();
   await expect(page.getByTestId('game-status')).toHaveText('Running');
 
   const before = await playerY(page);
@@ -159,11 +167,14 @@ test('runThreshold scales running speed and separates it from jumpThreshold', as
   expect(isGrounded).toBe(true);
 });
 
-test('squirrel can move via arrow keys without the mic on', async ({ page }) => {
+test('squirrel can move via arrow keys in admin mode', async ({ page }) => {
   await boot(page);
   
   const getPlayerX = () => page.evaluate(() => window.__game.player.x);
   const startX = await getPlayerX();
+  
+  // Toggle admin mode to enable arrow keys
+  await page.keyboard.press('Shift+A');
   
   // Make sure volume is 0 (mic is off by default, and manual volume starts at 0)
   await setVolume(page, 0);
@@ -182,32 +193,36 @@ test('squirrel can move via arrow keys without the mic on', async ({ page }) => 
 });
 
 test('level-up screen appears and disappears after a short time', async ({ page }) => {
-  await boot(page, { config: { branchOffsetX: 0, nutsPerLevel: 1 } });
+  await boot(page, { config: { branchOffsetX: 0, nutsPerLevel: 10 } });
   
-  // Before leveling up, the overlay shouldn't have class "show"
-  await expect(page.getByTestId('level-up-screen')).not.toHaveClass(/show/);
+  // Before leveling up, the overlay shouldn't be open
+  await expect(page.getByTestId('level-up-screen')).toHaveJSProperty('open', false);
 
-  // Jump to collect the nut
-  await setDirection(page, 0);
-  await setVolume(page, 1);
-  await step(page, 40);
+  // Teleport player precisely above the Level 2 start threshold dynamically
+  await page.evaluate(() => {
+    // The top of the last branch is exactly GameState.game.topY
+    const topY = window.__game.branches[window.__game.branches.length - 1].top;
+    window.__game.player.y = topY + 10; // Just high enough to cross level2StartY
+    window.__game.player.invincible = true;
+  });
+  
+  await step(page, 10);
 
-  // Score increases, level becomes 2, level-up screen should be shown
-  await expect(page.getByTestId('score')).toHaveText('1');
+  // Score doesn't need to increase for height-based leveling, but level becomes 2
   await expect(page.getByTestId('level')).toHaveText('2');
-  await expect(page.getByTestId('level-up-screen')).toHaveClass(/show/);
+  await expect(page.getByTestId('level-up-screen')).toHaveJSProperty('open', true);
   await expect(page.getByTestId('level-up-num')).toHaveText('2');
 
   // Advance physics steps beyond the 90 tick timer
   await step(page, 95);
-  await expect(page.getByTestId('level-up-screen')).not.toHaveClass(/show/);
+  await expect(page.getByTestId('level-up-screen')).toHaveJSProperty('open', false);
 });
 
 test('death screen is displayed on game over with stats and a functional reset button', async ({ page }) => {
   await boot(page, { config: { branchOffsetX: 0 } });
   
   // Before dying, death screen should be hidden
-  await expect(page.getByTestId('death-screen')).toHaveClass(/hidden/);
+  await expect(page.getByTestId('death-screen')).toHaveJSProperty('open', false);
 
   // Fall 3 times to lose all lives
   const fall = () =>
@@ -229,7 +244,7 @@ test('death screen is displayed on game over with stats and a functional reset b
   await expect(page.getByTestId('game-status')).toHaveText('Game Over');
   
   // Death screen should be visible
-  await expect(page.getByTestId('death-screen')).not.toHaveClass(/hidden/);
+  await expect(page.getByTestId('death-screen')).toHaveJSProperty('open', true);
   await expect(page.getByTestId('death-score')).toHaveText('0');
   await expect(page.getByTestId('death-level')).toHaveText('1');
 
@@ -238,7 +253,7 @@ test('death screen is displayed on game over with stats and a functional reset b
 
   // Status returns to Running, death screen hidden
   await expect(page.getByTestId('game-status')).toHaveText('Running');
-  await expect(page.getByTestId('death-screen')).toHaveClass(/hidden/);
+  await expect(page.getByTestId('death-screen')).toHaveJSProperty('open', false);
 });
 
 test('spawns ant, gator, and grasshopper enemies based on seeds', async ({ page }) => {

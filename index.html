@@ -4,21 +4,83 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Die Klangnüsse</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- Inline SVG Sprite for CSS Variable Support -->
+  <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+    <symbol id="icon-heart" viewBox="-1 -1 11 10" shape-rendering="crispEdges">
+      <g class="heart-shape">
+        <rect x="2" y="0" width="2" height="1" />
+        <rect x="5" y="0" width="2" height="1" />
+        <rect x="1" y="1" width="7" height="1" />
+        <rect x="0" y="2" width="9" height="2" />
+        <rect x="1" y="4" width="7" height="1" />
+        <rect x="2" y="5" width="5" height="1" />
+        <rect x="3" y="6" width="3" height="1" />
+        <rect x="4" y="7" width="1" height="1" />
+      </g>
+      <g class="heart-highlight">
+        <rect x="2" y="1" width="1" height="1" />
+        <rect x="1" y="2" width="1" height="1" />
+      </g>
+    </symbol>
+
+    <symbol id="icon-mic" viewBox="0 0 16 16" shape-rendering="crispEdges">
+      <rect x="6" y="2" width="4" height="6" fill="currentColor" />
+      <rect x="7" y="1" width="2" height="1" fill="currentColor" />
+      <rect x="7" y="8" width="2" height="1" fill="currentColor" />
+      <rect x="6" y="4" width="4" height="1" fill="var(--panel-light)" />
+      <rect x="6" y="6" width="4" height="1" fill="var(--panel-light)" />
+      <rect x="3" y="6" width="2" height="5" fill="currentColor" />
+      <rect x="11" y="6" width="2" height="5" fill="currentColor" />
+      <rect x="4" y="10" width="8" height="2" fill="currentColor" />
+      <rect x="7" y="12" width="2" height="2" fill="currentColor" />
+      <rect x="5" y="14" width="6" height="1" fill="currentColor" />
+    </symbol>
+
+    <symbol id="icon-mute" viewBox="0 0 16 16" shape-rendering="crispEdges">
+      <rect x="2" y="6" width="4" height="4" fill="currentColor" />
+      <rect x="6" y="5" width="2" height="6" fill="currentColor" />
+      <rect x="8" y="4" width="2" height="8" fill="currentColor" />
+      <rect x="10" y="3" width="2" height="10" fill="currentColor" />
+      <line class="mute-slash" x1="1" y1="15" x2="15" y2="1" stroke="var(--warn)" stroke-width="2" />
+    </symbol>
+
+    <symbol id="icon-pause" viewBox="0 0 16 16" shape-rendering="crispEdges">
+      <rect x="4" y="3" width="3" height="10" fill="currentColor" />
+      <rect x="9" y="3" width="3" height="10" fill="currentColor" />
+    </symbol>
+
+    <symbol id="icon-play" viewBox="0 0 16 16" shape-rendering="crispEdges">
+      <rect x="4" y="2" width="2" height="12" fill="currentColor" />
+      <rect x="6" y="3" width="2" height="10" fill="currentColor" />
+      <rect x="8" y="4" width="2" height="8" fill="currentColor" />
+      <rect x="10" y="5" width="2" height="6" fill="currentColor" />
+      <rect x="12" y="6" width="2" height="4" fill="currentColor" />
+      <rect x="14" y="7" width="2" height="2" fill="currentColor" />
+    </symbol>
+
+    <symbol id="icon-reset" viewBox="0 0 16 16" shape-rendering="crispEdges">
+      <rect x="6" y="2" width="4" height="2" fill="currentColor" />
+      <rect x="10" y="3" width="2" height="2" fill="currentColor" />
+      <rect x="11" y="5" width="2" height="4" fill="currentColor" />
+      <rect x="10" y="9" width="2" height="2" fill="currentColor" />
+      <rect x="6" y="10" width="4" height="2" fill="currentColor" />
+      <rect x="4" y="9" width="2" height="2" fill="currentColor" />
+      <rect x="3" y="5" width="2" height="4" fill="currentColor" />
+      <rect x="1" y="5" width="2" height="2" fill="currentColor" />
+      <rect x="5" y="5" width="2" height="2" fill="currentColor" />
+      <rect x="2" y="3" width="4" height="2" fill="currentColor" />
+    </symbol>
+  </svg>
   <div class="game">
     <div class="stage">
-      <div class="canvas-container">
-        <canvas
-          id="game-canvas"
-          data-testid="game-canvas"
-          width="480"
-          height="640"
-        ></canvas>
-
-        <aside class="sidebar">
-          <h1 class="title">Die Klangnüsse</h1>
+      <aside class="sidebar">
+        <h1 class="title">Die Klangnüsse</h1>
           
           <!-- Status Section (visually omitted/hidden but kept in DOM for test suite) -->
           <span data-testid="game-status" class="hidden">Ready</span>
@@ -27,13 +89,13 @@
           <div class="sidebar-section health-section">
             <div class="hearts-container">
               <div class="heart" data-heart="1">
-                <img src="svgs/heart.svg" class="heart-icon svg-inject" alt="Heart" />
+                <svg class="heart-icon" role="img" aria-label="Heart"><use href="#icon-heart"></use></svg>
               </div>
               <div class="heart" data-heart="2">
-                <img src="svgs/heart.svg" class="heart-icon svg-inject" alt="Heart" />
+                <svg class="heart-icon" role="img" aria-label="Heart"><use href="#icon-heart"></use></svg>
               </div>
               <div class="heart" data-heart="3">
-                <img src="svgs/heart.svg" class="heart-icon svg-inject" alt="Heart" />
+                <svg class="heart-icon" role="img" aria-label="Heart"><use href="#icon-heart"></use></svg>
               </div>
             </div>
             <!-- Hidden test container for lives -->
@@ -46,11 +108,14 @@
               <span class="lvl-label">LVL</span>
               <span class="lvl-val" data-testid="level">1</span>
             </div>
+            <div class="score-indicator">
+              <span class="score-label">Nuts: </span>
+              <span class="score-val" data-testid="score-display">0</span>
+            </div>
             <div class="score-bar-wrapper">
               <div id="score-bar" class="score-bar">
-                <!-- Dynamic segments will be inserted here -->
+                <div id="level-progress" class="score-segment filled" style="width: 0%; flex: none; transition: width 0.2s linear;"></div>
               </div>
-              <!-- Hidden test containers for score / remaining nuts -->
               <span data-testid="score" class="hidden">0</span>
               <span data-testid="nut-count" class="hidden">0</span>
             </div>
@@ -59,34 +124,94 @@
           <!-- Controls Section -->
           <div class="sidebar-section controls-section">
             <button data-testid="btn-pause" class="btn-pixel btn-pause" disabled aria-label="Pause">
-              <img src="svgs/pause.svg" class="icon-pause svg-inject" alt="Pause" />
-              <img src="svgs/play.svg" class="icon-play hidden svg-inject" alt="Play" />
+              <svg class="icon-pause" aria-hidden="true"><use href="#icon-pause"></use></svg>
+              <svg class="icon-play hidden" aria-hidden="true"><use href="#icon-play"></use></svg>
             </button>
             <button data-testid="btn-reset" class="btn-pixel btn-reset" aria-label="Reset">
-              <img src="svgs/reset.svg" class="icon-reset svg-inject" alt="Reset" />
+              <svg class="icon-reset" aria-hidden="true"><use href="#icon-reset"></use></svg>
             </button>
             <button data-testid="btn-mute" class="btn-pixel btn-mute" aria-label="Mute">
-              <img src="svgs/mute.svg" class="icon-mute svg-inject" alt="Mute" />
+              <svg class="icon-mute" aria-hidden="true"><use href="#icon-mute"></use></svg>
             </button>
             <button data-testid="btn-mic" class="btn-pixel btn-mic" aria-label="Microphone">
-              <img src="svgs/mic.svg" class="icon-mic svg-inject" alt="Mic" />
+              <svg class="icon-mic" aria-hidden="true"><use href="#icon-mic"></use></svg>
             </button>
           </div>
         </aside>
 
         <!-- Admin Commands Panel (Right Side) -->
         <aside class="sidebar right-sidebar hidden" id="admin-panel">
-          <h2 class="title admin-title">ADMIN MODE</h2>
-          <div class="sidebar-section admin-commands">
-            <div class="cmd-row"><span class="cmd-key">Shift+A</span> <span class="cmd-desc">Toggle Admin</span></div>
-            <div class="cmd-row"><span class="cmd-key">Shift+N</span> <span class="cmd-desc">Next Level</span></div>
-            <div class="cmd-row"><span class="cmd-key">Shift+H</span> <span class="cmd-desc">+1 Life</span></div>
-            <div class="cmd-row"><span class="cmd-key">Shift+M</span> <span class="cmd-desc">Super Jump</span></div>
+          <h2 class="title admin-title">DEV CONSOLE</h2>
+          <div class="admin-panel-content">
+            <div class="admin-section">
+              <h3 class="admin-subtitle">Cheats</h3>
+              <div class="admin-btn-grid">
+                <button id="btn-admin-god" class="btn btn-admin" title="Toggle Invincibility [Shift+I]">God Mode</button>
+                <button id="btn-admin-life" class="btn btn-admin" title="+1 Life [Shift+H]">+1 Life</button>
+                <button id="btn-admin-nuts" class="btn btn-admin" title="+100 Nuts [Shift+V]">+100 Nuts</button>
+                <button id="btn-admin-jump" class="btn btn-admin" title="Super Jump [Shift+M]">Super Jump</button>
+                <button id="btn-admin-kill" class="btn btn-admin" title="Kill Enemies [Shift+K]">Kill Mobs</button>
+                <button id="btn-admin-teleport" class="btn btn-admin" title="Teleport Up [Shift+N]">Teleport</button>
+              </div>
+            </div>
+
+            <div class="admin-section">
+              <h3 class="admin-subtitle">Spawn</h3>
+              <div class="admin-btn-grid">
+                <button id="btn-admin-spawn-heart" class="btn btn-admin" title="Spawn Heart [Shift+O]">Heart</button>
+                <button id="btn-admin-spawn-plat" class="btn btn-admin" title="Spawn Platform [Shift+S]">Platform</button>
+              </div>
+            </div>
+
+            <div class="admin-section">
+              <h3 class="admin-subtitle">World Tweaks</h3>
+              <div class="admin-slider-row">
+                <label for="admin-gravity">Gravity</label>
+                <input type="range" id="admin-gravity" min="0.1" max="2" step="0.1" value="0.5">
+                <span id="admin-gravity-val" class="slider-val">0.5</span>
+              </div>
+              <div class="admin-slider-row">
+                <label for="admin-jump-impulse">Jump Pow</label>
+                <input type="range" id="admin-jump-impulse" min="5" max="25" step="1" value="12">
+                <span id="admin-jump-impulse-val" class="slider-val">12</span>
+              </div>
+              <div class="admin-slider-row">
+                <label for="admin-speed">Tick (ms)</label>
+                <input type="range" id="admin-speed" min="8" max="32" step="1" value="16">
+                <span id="admin-speed-val" class="slider-val">16</span>
+              </div>
+            </div>
+
+            <div class="admin-section">
+              <h3 class="admin-subtitle">Debug</h3>
+              <button id="btn-admin-hitboxes" class="btn btn-admin toggle-btn active">Show Hitboxes: ON</button>
+            </div>
           </div>
         </aside>
 
+      <div class="canvas-container">
+        <canvas
+          id="game-canvas"
+          data-testid="game-canvas"
+          width="480"
+          height="640"
+        ></canvas>
+
+        <!-- Story Screen Overlay -->
+        <dialog id="story-screen" class="overlay-screen" data-testid="story-screen">
+          <div class="overlay-panel story-panel">
+            <h2 class="story-title">Maestro Frog:</h2>
+            <div class="story-text">
+              <p>Ah, the silent squirrel... Have you lost your voice?</p>
+              <p>Tragic! You must sing to the trees to find your melody again. The pitch of your voice will guide you left and right. Shout to push away your enemies.</p>
+              <p>Now, go! Ascend the branches!</p>
+            </div>
+            <button id="btn-start-story" class="btn btn-reset">Start Singing</button>
+          </div>
+        </dialog>
+
         <!-- Death Screen Overlay -->
-        <div id="death-screen" class="overlay-screen hidden" data-testid="death-screen">
+        <dialog id="death-screen" class="overlay-screen" data-testid="death-screen">
           <div class="overlay-panel">
             <h2 class="death-title">GAME OVER</h2>
             <div class="death-stats">
@@ -95,15 +220,15 @@
             </div>
             <button data-testid="btn-death-reset" class="btn btn-reset btn-death-reset">Play Again</button>
           </div>
-        </div>
+        </dialog>
 
         <!-- Level Up Overlay -->
-        <div id="level-up-screen" class="overlay-screen" data-testid="level-up-screen">
+        <dialog id="level-up-screen" class="overlay-screen" data-testid="level-up-screen">
           <div class="level-up-panel">
             <h2 class="level-up-title">LEVEL UP!</h2>
             <div class="level-up-subtitle">Ready for Level <span data-testid="level-up-num">2</span></div>
           </div>
-        </div>
+        </dialog>
       </div>
     </div>
 
@@ -126,30 +251,7 @@
     </div>
   </div>
 
-  <script src="js/rng.js"></script>
-  <script src="js/input.js"></script>
-  <script src="js/game.js"></script>
-  <script>
-    document.querySelectorAll('img.svg-inject').forEach(img => {
-      fetch(img.src)
-        .then(r => r.text())
-        .then(text => {
-          const div = document.createElement('div');
-          div.innerHTML = text;
-          const svg = div.querySelector('svg');
-          if (svg) {
-            Array.from(img.attributes).forEach(attr => {
-              if (attr.name === 'class') {
-                const classes = attr.value.split(' ').filter(c => c !== 'svg-inject');
-                svg.classList.add(...classes);
-              } else if (attr.name !== 'src' && attr.name !== 'alt') {
-                svg.setAttribute(attr.name, attr.value);
-              }
-            });
-            img.replaceWith(svg);
-          }
-        });
-    });
-  </script>
+  <script type="module" src="/js/main.js"></script>
+
 </body>
 </html>

@@ -1,0 +1,61 @@
+Created At: 2026-06-06T12:59:30Z
+Completed At: 2026-06-06T12:59:30Z
+File Path: `file:///Users/olereinhold/Developer/agentic_coding_workshop/solution/js/Renderer.js`
+Total Lines: 580
+Total Bytes: 19891
+Showing lines 128 to 180
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+128: function drawTrunk() {
+129:   const hasTileset = baseImgs.tileset && baseImgs.tileset.complete && baseImgs.tileset.naturalWidth;
+130: 
+131:   if (hasTileset) {
+132:     // Visible rows in world units
+133:     const startRow = Math.max(0, Math.floor(GameState.cameraY / 16) - 1);
+134:     const endRow = Math.ceil((GameState.cameraY + VH) / 16) + 1;
+135: 
+136:     for (let r = startRow; r <= endRow; r++) {
+137:       const worldY = r * 16;
+138:       const screenY = toScreenY(worldY + 16, GameState.cameraY);
+139: 
+140:       // Group into 2-row blocks for organic segment tiling (bark, knots, hollows)
+141:       const B = Math.floor(r / 2);
+142:       const subRow = ((r % 2) + 2) % 2;
+143: 
+144:       // Simple hash to determine block segment type (excluding Segment 5 which has mossy/ground logs)
+145:       const hash = Math.abs((B * 123456789) % 100);
+146:       let segmentStartRow = 2; // default Segment 1
+147: 
+148:       if (hash < 15) {
+149:         segmentStartRow = 10; // Segment 3 with hollow (Rows 10,11)
+150:       } else if (hash < 30) {
+151:         segmentStartRow = 14; // Segment 4 with knot (Rows 14,15)
+152:       } else {
+153:         // Alternating normal wood segments
+154:         segmentStartRow = (hash % 2 === 0) ? 2 : 6; // Segment 1 (Rows 2,3) or Segment 2 (Rows 6,7)
+155:       }
+156: 
+157:       const sr = segmentStartRow + subRow;
+158: 
+159:       // Trunk in tileset.png is columns 15 to 20 (6 tiles, 96px width)
+160:       const sx = 15 * 16;
+161:       const sy = sr * 16;
+162: 
+163:       const img = baseImgs.tileset;
+164: 
+165:       // Draw centered at W/2 = 240
+166:       const tx = W / 2 - 48;
+167:       ctx.drawImage(img, sx, sy, 96, 16, Math.round(tx), Math.round(screenY), 96, 17);
+168:     }
+169:   } else {
+170:     // Fallback: procedural bark rectangle while assets load
+171:     const tx = W / 2 - 28;
+172:     px(tx, 0, 56, VH, C.bark);
+173:     for (let i = 0; i < 8; i++) {
+174:       const yy = ((i * 90 - GameState.cameraY * 0.6) % VH + VH) % VH;
+175:       px(tx + 6, yy, 4, 40, C.barkDark);
+176:       px(tx + 40, yy + 24, 4, 32, C.barkLight);
+177:       px(tx + 22, yy + 60, 3, 28, C.barkDark);
+178:     }
+179:   }
+180: }
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

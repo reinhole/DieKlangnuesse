@@ -32,6 +32,10 @@
   let micVolume = 0;
   let analyser = null;
   let micData = null;
+  let freqData = null;
+  let audioCtx = null;
+  let currentPitchHz = null;
+  let pitchBaseline = null;
 
   // Rising-edge tracking for the "loud peak = jump" mapping.
   let prevHigh = false;
@@ -49,8 +53,22 @@
   function getDirection() {
     if (dirOverride !== null) return dirOverride;
     let d = 0;
-    if (leftHeld) d -= 1;
-    if (rightHeld) d += 1;
+    
+    if (window.__adminMode) {
+      if (leftHeld) d -= 1;
+      if (rightHeld) d += 1;
+    }
+
+    if (micActive && currentPitchHz && pitchBaseline) {
+      const diff = currentPitchHz - pitchBaseline;
+      // Provide a deadzone of roughly 40Hz
+      if (diff > 40) {
+        d = 1;
+      } else if (diff < -40) {
+        d = -1;
+      }
+    }
+
     return d;
   }
 
@@ -62,7 +80,7 @@
     const high = vol >= jumpThreshold();
     const edge = high && !prevHigh;
     prevHigh = high;
-    if (jumpQueued) {
+    if (jumpQueued && window.__adminMode) {
       jumpQueued = false;
       window.Input.lastJumpInfo = { source: "manual", volume: vol };
       return true;
@@ -90,11 +108,12 @@
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      const ctx = new AudioCtx();
-      const src = ctx.createMediaStreamSource(stream);
-      analyser = ctx.createAnalyser();
-      analyser.fftSize = 1024;
+      audioCtx = new AudioCtx();
+      const src = audioCtx.createMediaStreamSource(stream);
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 2048;
       micData = new Uint8Array(analyser.fftSize);
+      freqData = new Float32Array(analyser.frequencyBinCount);
       src.connect(analyser);
       micActive = true;
       const btn = $("btn-mic");
@@ -127,6 +146,31 @@
     // Map a usable speaking/shouting range onto [0,1] and smooth it.
     const norm = Math.min(1, rms / 0.15);
     micVolume = micVolume * 0.6 + norm * 0.4;
+    
+    if (norm > 0.05) {
+      analyser.getFloatFrequencyData(freqData);
+      let maxVal = -Infinity;
+      let maxIndex = -1;
+      const binSize = audioCtx.sampleRate / analyser.fftSize;
+      const minBin = Math.floor(80 / binSize);
+      const maxBin = Math.floor(1200 / binSize);
+      
+      for (let i = minBin; i <= maxBin; i++) {
+        if (freqData[i] > maxVal) {
+          maxVal = freqData[i];
+          maxIndex = i;
+        }
+      }
+      
+      if (maxIndex !== -1) {
+        const pitch = maxIndex * binSize;
+        currentPitchHz = currentPitchHz ? currentPitchHz * 0.5 + pitch * 0.5 : pitch;
+        if (!pitchBaseline) pitchBaseline = currentPitchHz;
+      }
+    } else {
+      currentPitchHz = null;
+    }
+
     updateMeter();
     requestAnimationFrame(sampleMic);
   }
@@ -180,8 +224,8 @@
     crouchOverride = c === null ? null : !!c;
   };
 
-  const isJumpHeld = () => jumpHeld || getVolume() >= jumpThreshold();
-  const isCrouchHeld = () => crouchOverride !== null ? crouchOverride : crouchHeld;
+  const isJumpHeld = () => (jumpHeld && window.__adminMode) || getVolume() >= jumpThreshold();
+  const isCrouchHeld = () => crouchOverride !== null ? crouchOverride : (crouchHeld && window.__adminMode);
   const isMicActive = () => micActive;
   const isKeyboardMoving = () => leftHeld || rightHeld;
 

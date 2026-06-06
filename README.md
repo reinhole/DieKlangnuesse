@@ -15,8 +15,16 @@ Links/Rechts** (oder den Buttons auf dem Bildschirm).
 | 📢 Lautstärke (Mikrofon oder Schieberegler) | Tempo — leise = langsam, laut = schnell |
 | 📢 Sehr laut / Schrei (oder **Jump**-Button) | Sprung (nur am Boden) |
 | ⬅️ ➡️ Pfeiltasten **oder** ◄/► Buttons | Richtung |
+| **↓** / **S** | Ducken (verlangsamt, fällt durch Äste) |
 | **Start / Pause / Reset** | Spielsteuerung |
 | 🎤 **Enable mic** | Mikrofon aktivieren (optional) |
+
+### Admin Commands
+Für schnelles Testen gibt es einen Admin-Modus:
+- **Shift+A**: Admin Panel ein-/ausblenden
+- **Shift+N**: Nächstes Level (gibt Nüsse für ein Level-Up)
+- **Shift+H**: +1 Leben
+- **Shift+M**: Super Jump (maximiert die Sprunghöhe)
 
 Ziel: Sammle die Nüsse, klettere immer höher, steige in Level auf. Fällst du unten
 aus dem Bild, kostet das ein Leben. Bei 0 Leben ist das Spiel vorbei.
@@ -27,28 +35,37 @@ aus dem Bild, kostet das ein Leben. Bei 0 Leben ist das Spiel vorbei.
 
 ## Lokal starten
 
+Das Projekt nutzt **Vite** als leichtgewichtiges Build-Tool für Hot Module Replacement (HMR) im Development und zur Asset-Optimierung im Production-Build.
+
 ```bash
 npm install
-PORT=3000 node server.js     # danach http://localhost:3000 oeffnen
+
+# Startet den Vite Development-Server mit HMR
+npm run dev
+
+# Baut die optimierte Version für Production (im Ordner dist/)
+npm run build
+
+# Startet den Produktions-Server (liefert dist/ aus, falls vorhanden)
+PORT=3000 npm start
 ```
 
 ## Tests
 
 End-to-End-Tests laufen mit Playwright, deterministisch über die DOM-Schnittstelle
-und die `window.__*`-Test-Hooks (kein echtes Mikrofon noetig):
+und die `window.__*`-Test-Hooks (kein echtes Mikrofon nötig):
 
 ```bash
 npx playwright install chromium   # nur beim ersten Mal
 npm test
 ```
 
-## Technik (Kurzueberblick)
+## Technik (Kurzüberblick)
 
-Vanilla JavaScript, keine Runtime-Dependencies — `server.js` ist ein kleiner
-statischer HTTP-Server. Der Spielzustand steht **als lesbarer Text im DOM**
-(stabile `data-testid`s), Zufall ist seedbar (`window.__setSeed`) und Timing ist
-konfigurierbar (`window.__config`). Details und Konventionen für die Weiterarbeit
-stehen in `CLAUDE.md`.
+- Vanilla JavaScript mit modernen ES-Modulen im `js/` Ordner.
+- **Vite** bündelt den Code und optimiert Assets.
+- `server.js` ist ein minimaler Node.js HTTP-Server, der für das produktive Deployment gedacht ist und automatisch den Build aus `dist/` ausliefert.
+- Der Spielzustand steht **als lesbarer Text im DOM** (stabile `data-testid`s), Zufall ist seedbar (`window.__setSeed`) und Timing ist konfigurierbar (`window.__config`).
 
 ## Doku & Entwickler-Tools
 
@@ -57,7 +74,6 @@ stehen in `CLAUDE.md`.
 | [`CLAUDE.md`](CLAUDE.md) | Projekt-Guide + Engine-Invarianten (für Menschen **und** Agenten). |
 | [`../CLAUDE.md`](../CLAUDE.md) | Bindender DOM-Test-Contract (`data-testid`s, Status-Werte, seedbarer Zufall). |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Engine-Interna: Koordinaten, Kamera, Audio, Asset-Pipeline. |
-| [`PLAN.md`](PLAN.md) | Ursprünglicher Entwurf (historisch, teilweise überholt). |
 
 ```bash
 npm run check   # schneller, abhängigkeitsfreier Check des DOM-Contracts (data-testids)
@@ -71,9 +87,9 @@ der die `window.__*`-Test-Hooks kennt.
 
 ---
 
-### Wettbewerbs-Loesung
+### Wettbewerbs-Lösung
 
-Meldet euch zuerst in der Workshop-App an und oeffnet euer Profil. Dort findet ihr euren persoenlichen Gitea-Benutzernamen und das Initialpasswort.
+Meldet euch zuerst in der Workshop-App an und öffnet euer Profil. Dort findet ihr euren persönlichen Gitea-Benutzernamen und das Initialpasswort.
 
 Gitea-Login: https://gitea.heyclever.net
 
@@ -86,42 +102,41 @@ Gitea-Login: https://gitea.heyclever.net
 
 #### Deployment
 
-Jeder Push auf den `main`-Branch loest ein automatisches Deployment aus.
+Jeder Push auf den `main`-Branch löst ein automatisches Deployment aus.
 
-Eure App ist anschliessend erreichbar unter:
+Eure App ist anschließend erreichbar unter:
 **https://die-klangn-sse.workshop.heyclever.net**
 
-#### Einstieg fuer den Kreativ-Track
+#### Einstieg für den Kreativ-Track
 
 1. Mit den Zugangsdaten aus dem Profil bei https://gitea.heyclever.net anmelden.
-2. Im Team-Workspace das Repo `solution` oeffnen.
-3. Diese README komplett lesen und danach in `server.js` und den restlichen Dateien arbeiten.
-4. Nach jedem Push auf `main` die Team-Subdomain pruefen.
+2. Im Team-Workspace das Repo `solution` öffnen.
+3. Diese README komplett lesen und danach mit `npm run dev` lokal entwickeln.
+4. Nach jedem Push auf `main` die Team-Subdomain prüfen.
 
 #### Projektstruktur
 
 ```
 solution/
-|-- server.js          <- Einstiegspunkt (PFLICHT)
-|-- package.json       <- Dependencies (PFLICHT)
+|-- server.js          <- Einstiegspunkt für Production (PFLICHT)
+|-- package.json       <- Dependencies inkl. Vite und Playwright (PFLICHT)
 |-- package-lock.json  <- Lock-Datei (PFLICHT, npm install generiert sie)
-|-- .gitignore         <- node_modules/ ausschliessen
 |-- index.html         <- Spiel-UI (DOM-Contract)
 |-- style.css          <- Pixel-Styling
-|-- rng.js             <- seedbarer Zufall
-|-- input.js           <- Mikrofon- und manuelle Eingabe
-|-- game.js            <- Spiel-Engine
+|-- js/                <- ES-Module (main.js, rng.js, input.js, GameState.js, Renderer.js, etc.)
+|-- svgs/              <- SVG-Grafiken für UI (Hearts, Icons)
 |-- tests/             <- Playwright-Tests
+|-- .gitignore         <- node_modules/ ausschließen
 ```
 
 #### Regeln
 
-1. `server.js` ist der Einstiegspunkt. Dort startet euer HTTP-Server.
+1. `server.js` ist der Einstiegspunkt für das Deployment. Dort startet euer HTTP-Server.
 2. Der Server MUSS auf dem Port lauschen, der in `process.env.PORT` steht.
 3. Alle Dependencies in `package.json` deklarieren.
 4. `node_modules/` NICHT committen.
 5. `package-lock.json` MUSS committet werden.
-6. Kein `Dockerfile` noetig - wird automatisch erzeugt.
+6. Kein `Dockerfile` nötig - wird automatisch erzeugt.
 
 #### Quickstart
 
@@ -129,28 +144,9 @@ solution/
 git clone https://gitea.heyclever.net/die-klangn-sse/solution.git
 cd solution
 npm install
-PORT=3000 node server.js
+npm run dev
 ```
 
 #### Assets
 
-Fuer grafische Assets koennt ihr die freien Assets von https://kenney.nl/
-verwenden. Diese Loesung nutzt stattdessen prozedural gezeichnete Pixel-Grafik
-(keine externen Asset-Dateien noetig).
-
-#### Beispiel server.js
-
-```javascript
-const http = require('http');
-const PORT = process.env.PORT || 3000;
-const HOST = '0.0.0.0';
-
-const server = http.createServer((req, res) => {
-  res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-  res.end('<h1>Hallo Welt!</h1>');
-});
-
-server.listen(PORT, HOST, () => {
-  console.log(`Server laeuft auf http://${HOST}:${PORT}`);
-});
-```
+Für grafische Assets könnt ihr die freien Assets von https://kenney.nl/ verwenden. Diese Lösung nutzt stattdessen prozedural gezeichnete Pixel-Grafik im Canvas, ergänzt durch SVG-Icons für das UI.

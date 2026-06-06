@@ -7,7 +7,7 @@ const path = require('path');
 
 const PORT = process.env.PORT || 3000;
 const HOST = '0.0.0.0';
-const ROOT = __dirname;
+const ROOT = fs.existsSync(path.join(__dirname, 'dist')) ? path.join(__dirname, 'dist') : __dirname;
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
