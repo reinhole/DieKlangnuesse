@@ -19,13 +19,13 @@
   const VH = Math.round(H / ZOOM);            // 427 — visible world height at zoom
   const cameraOffX = Math.round((W - W / ZOOM) / 2); // 80 — horizontal crop to centre trunk
 
-  const ASSET_BASE = '/Sunny-land-woods-files/Assets';
+  const ASSET_BASE = '/assets/sunnyland-woods';
   const SOUND_PATHS = {
-    bgm: '/Demo/assets/sounds/the_valley.m4a',
-    jump: '/Demo/assets/sounds/jump.m4a',
-    item: '/Demo/assets/sounds/item.m4a',
-    hurt: '/Demo/assets/sounds/hurt.m4a',
-    enemyDeath: '/Demo/assets/sounds/enemy-death.m4a',
+    bgm: '/sounds/the_valley.m4a',
+    jump: '/sounds/jump.m4a',
+    item: '/sounds/item.m4a',
+    hurt: '/sounds/hurt.m4a',
+    enemyDeath: '/sounds/enemy-death.m4a',
   };
 
   class AudioController {
@@ -931,8 +931,8 @@
     for (let i = 1; i <= 2; i++) loadImg('hurt' + i, '/SPRITES/player/hurt/player-hurt-' + i + '.png');
     loadImg('tileset', '/ENVIRONMENT/tileset.png');
 
-    const fPrefix = '/Fort%20of%20Illusion%20Files/Assets/Layers/';
-    const wPrefix = '/sunnyland%20winter%20forest%20files/ENVIRONMENT/';
+    const fPrefix = '/assets/fort-of-illusion/Layers/';
+    const wPrefix = '/assets/sunnyland-winter/';
     loadImg('bgClouds', fPrefix + 'back.png', winterImgs, true);
     loadImg('bgMountains', fPrefix + 'mountains.png', winterImgs, true);
     loadImg('branch3', wPrefix + 'props-sliced/branche-left.gif', winterImgs, true);

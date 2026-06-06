@@ -338,6 +338,7 @@ test('crouching slows down horizontal speed and allows phasing through platforms
   // Teleport player above branchTop, descending
   await page.evaluate((top) => {
     const p = window.__game.player;
+    p.x = 240; // Reset X to center to land flat on the branch
     p.y = top + 20;
     p.vy = -2;
     p.grounded = false;
