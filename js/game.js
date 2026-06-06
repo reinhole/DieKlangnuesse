@@ -241,25 +241,27 @@
       // type 3 (leafy branch): base on left, tip on right.
       // Base connects low (-6), tip curves up (6)
       boxes = [
-        {x: 0,  w: 10, yOffset: -6},
-        {x: 10, w: 10, yOffset: -3},
-        {x: 20, w: 10, yOffset: -1},
-        {x: 30, w: 40, yOffset: 0},
+        {x: 10, w: 10, yOffset: -18},
+        {x: 20, w: 10, yOffset: -16},
+        {x: 30, w: 10, yOffset: -8},
+        {x: 40, w: 10, yOffset: -6},
+        {x: 50, w: 10, yOffset: -2},
+        {x: 60, w: 10, yOffset: -0},
         {x: 70, w: 10, yOffset: 2},
         {x: 80, w: 10, yOffset: 4},
-        {x: 90, w: 10, yOffset: 6}
       ];
     } else {
       // type 5 (dark branch): tip on left, base on right.
       // Tip curves up (4), base connects low (-6)
       boxes = [
-        {x: 0,   w: 10, yOffset: 4},
         {x: 10,  w: 10, yOffset: 2},
-        {x: 20,  w: 10, yOffset: 1},
-        {x: 30,  w: 60, yOffset: 0},
-        {x: 90,  w: 10, yOffset: -2},
-        {x: 100, w: 10, yOffset: -4},
-        {x: 110, w: 23, yOffset: -6}
+        {x: 20,  w: 10, yOffset: -1},
+        {x: 30,  w: 10, yOffset: -6},
+        {x: 40,  w: 10, yOffset: -6},
+        {x: 50,  w: 10, yOffset: -5},
+        {x: 60,  w: 10, yOffset: -4},
+        {x: 70,  w: 10, yOffset: -2},
+        {x: 80,  w: 10, yOffset: 1}
       ];
     }
 
