@@ -141,6 +141,8 @@
   // __testMode is OFF by default so real users (and any external Playwright
   // grader that doesn't know about __step) get a live, self-running game.
   // Our own deterministic tests opt in explicitly via window.__testMode = true.
+  window.__adminMode = false;
+
 
   let canvas, ctx;
   let state = "Ready";
@@ -228,6 +230,49 @@
     }
   }
 
+  function getBranchHitboxes(b) {
+    if (b.ground) return [{x: b.x, w: b.w, yOffset: 0}];
+    const isWinter = game && game.level2StartY !== undefined && b.top >= game.level2StartY;
+    let boxes = [];
+    
+    if (isWinter) {
+      boxes = [{x: 2, w: b.w - 4, yOffset: 0}];
+    } else if (b.type === 3) {
+      // type 3 (leafy branch): base on left, tip on right.
+      // Base connects low (-6), tip curves up (6)
+      boxes = [
+        {x: 0,  w: 10, yOffset: -6},
+        {x: 10, w: 10, yOffset: -3},
+        {x: 20, w: 10, yOffset: -1},
+        {x: 30, w: 40, yOffset: 0},
+        {x: 70, w: 10, yOffset: 2},
+        {x: 80, w: 10, yOffset: 4},
+        {x: 90, w: 10, yOffset: 6}
+      ];
+    } else {
+      // type 5 (dark branch): tip on left, base on right.
+      // Tip curves up (4), base connects low (-6)
+      boxes = [
+        {x: 0,   w: 10, yOffset: 4},
+        {x: 10,  w: 10, yOffset: 2},
+        {x: 20,  w: 10, yOffset: 1},
+        {x: 30,  w: 60, yOffset: 0},
+        {x: 90,  w: 10, yOffset: -2},
+        {x: 100, w: 10, yOffset: -4},
+        {x: 110, w: 23, yOffset: -6}
+      ];
+    }
+
+    if (!b.pointsRight) {
+      boxes = boxes.map(box => ({
+        x: b.w - (box.x + box.w),
+        w: box.w,
+        yOffset: box.yOffset
+      }));
+    }
+    return boxes;
+  }
+
   // --- World generation ---------------------------------------------------
   function generateLevel() {
     const c = cfg();
@@ -280,7 +325,14 @@
             type = window.__rng.next() < 0.5 ? 3 : 5; // Outside can be green or dark
           }
         }
-        const branchWidth = type === 3 ? 100 : 133;
+        let branchWidth;
+        if (game.level >= 2) {
+          // Winter branches (branche-left.gif, branche-right.gif) are much smaller natively
+          branchWidth = type === 3 ? 47 : 57;
+        } else {
+          // Summer branches
+          branchWidth = type === 3 ? 100 : 133;
+        }
         let bx, pointsRight;
 
         if (type === 3) {
@@ -534,23 +586,47 @@
     }
 
     // One-way platform landing: only when descending and crossing a branch top.
+    const wasGrounded = player.grounded;
     player.grounded = false;
     if (player.vy <= 0) {
       for (const b of game.branches) {
         if (window.Input.isCrouchHeld() && !b.ground) {
           continue;
         }
-        const overlapX =
-          player.x + player.w / 2 > b.x && player.x - player.w / 2 < b.x + b.w;
-        if (overlapX && prevY >= b.top && player.y <= b.top) {
-          player.y = b.top;
+        
+        let landed = false;
+        let bestHtop = -Infinity;
+        let validHit = false;
+        
+        const hitboxes = getBranchHitboxes(b);
+        for (const h of hitboxes) {
+          const hx = b.x + h.x;
+          const hw = h.w;
+          const htop = b.top + h.yOffset;
+          
+          const overlapX = player.x + player.w / 2 > hx && player.x - player.w / 2 < hx + hw;
+          const stepLeniency = wasGrounded ? 12 : 0;
+          const dropLeniency = wasGrounded ? 12 : 0;
+          
+          if (overlapX && prevY + stepLeniency >= htop && player.y - dropLeniency <= htop) {
+            if (htop > bestHtop) {
+              bestHtop = htop;
+              validHit = true;
+            }
+          }
+        }
+        
+        if (validHit) {
+          player.y = bestHtop;
           player.vy = 0;
           player.grounded = true;
-          player.lastSafe = { x: player.x, y: b.top };
+          player.lastSafe = { x: player.x, y: bestHtop };
           player.isVoiceJumping = false;
           player.airVx = 0;
-          break;
+          landed = true;
         }
+        
+        if (landed) break;
       }
     }
 
@@ -572,19 +648,33 @@
         const maxFrames = e.maxFrames !== undefined ? e.maxFrames : 8;
         e.animFrame = (e.animFrame + animSpeed) % maxFrames;
 
+        // Snap enemy to the precise multi-segment surface
+        let surfaceY = e.y;
+        const branch = game.branches.find(b => b.top === e.y && e.x >= b.x - 30 && e.x <= b.x + b.w + 30);
+        if (branch) {
+          const hitboxes = getBranchHitboxes(branch);
+          for (const h of hitboxes) {
+            const hx = branch.x + h.x;
+            if (e.x >= hx && e.x <= hx + h.w) {
+              surfaceY = branch.top + h.yOffset;
+              break;
+            }
+          }
+        }
+
         if (player.hurtTimer <= 0 && state === "Running") {
           const overlapX = Math.abs(player.x - e.x) < (player.w / 2 + e.w / 2 - 4);
-          const overlapY = Math.abs((player.y + player.h / 2) - (e.y + e.h / 2)) < (player.h / 2 + e.h / 2 - 2);
+          const overlapY = Math.abs((player.y + player.h / 2) - (surfaceY + e.h / 2)) < (player.h / 2 + e.h / 2 - 2);
 
           if (overlapX && overlapY) {
-            const isSquish = player.vy < 0 && prevY >= e.y + e.h - 6;
-            if (isSquish) {
+            const isSquish = player.vy < 0 && prevY >= surfaceY + e.h - 6;
+            if (isSquish || window.__adminMode) {
               game.enemies.splice(idx, 1);
               audio.playSFX('enemyDeath');
               player.vy = c.jumpImpulse * 0.7;
               game.score++;
-              spawnParticles(e.x, e.y + e.h / 2, 12, e.particleColor || '#b5432f');
-              spawnFloatingText(e.x, e.y + e.h + 5, "+1");
+              spawnParticles(e.x, surfaceY + e.h / 2, 12, e.particleColor || '#b5432f');
+              spawnFloatingText(e.x, surfaceY + e.h + 5, "+1");
               onScore();
             } else {
               loseLife();
@@ -623,7 +713,7 @@
     }
 
     // Falling below the viewport bottom costs a life.
-    if (player.y < cameraY) loseLife();
+    if (player.y < cameraY && !window.__adminMode) loseLife();
 
     // Nut/Heart collection.
     for (const nut of game.nuts) {
@@ -875,11 +965,16 @@
 
   // Tile a background layer vertically with parallax if shouldLoop is true,
   // or draw it once at the bottom if shouldLoop is false.
-  function drawBgLayer(img, speed, shouldLoop = false) {
+  function drawBgLayer(img, speed, shouldLoop = false, anchorToFloor = false, yOffset = 0) {
     if (!img || !img.complete || !img.naturalWidth) return;
     const sw = W;
     const sh = Math.round(img.height * (W / img.width));
-    if (shouldLoop) {
+    
+    if (anchorToFloor) {
+      const startY = (VH - 40) - sh + yOffset;
+      const y = startY + cameraY * speed;
+      ctx.drawImage(img, 0, Math.round(y), sw, sh);
+    } else if (shouldLoop) {
       const off = (cameraY * speed) % sh;
       for (let y = -sh + off; y < VH + sh; y += sh) {
         ctx.drawImage(img, 0, Math.round(y), sw, sh);
@@ -891,18 +986,33 @@
   }
 
   function drawBackground() {
+    const floorY = toScreenY(40);
+    
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, W, floorY);
+    ctx.clip();
+
     // Sky fill as fallback while images load.
     const grad = ctx.createLinearGradient(0, 0, 0, VH);
-    grad.addColorStop(0, '#4b8fd4');
-    grad.addColorStop(1, '#8dc8e8');
+    grad.addColorStop(0, '#0a89ff');
+    grad.addColorStop(1, '#98dcff');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, W, VH);
 
-    drawBgLayer(imgs.bgClouds,    0.08, true);
-    drawBgLayer(imgs.bgMountains, 0.18, true);
+    drawBgLayer(imgs.bgClouds,    0.08, false, true, 0); // Don't loop vertically, anchor to floor
+    drawBgLayer(imgs.bgMountains, 0.18, false, true, 50);
     const isWinter = game && game.level2StartY !== undefined && player.y >= game.level2StartY;
     if (!isWinter) {
-      drawBgLayer(imgs.bgTrees,     0.40, true);
+      drawBgLayer(imgs.bgTrees,     0.40, false, true, 50);
+    }
+    
+    ctx.restore();
+
+    // Draw solid color underground to prevent transparency issues
+    if (floorY < VH) {
+      ctx.fillStyle = '#1e110c'; // Dark earthy color
+      ctx.fillRect(0, floorY, W, VH - floorY);
     }
   }
 
@@ -977,35 +1087,35 @@
             continue;
           }
 
-          // Grass tile selection (Row 14 of tileset.png)
-          let gCol = 9; // Default grass tile
+          let gCol = 1; // Middle grass tile (row 8, col 1)
           let drawX = x;
           let drawW = 16;
+          
           if (col === 11) {
-            gCol = 13; // Right corner edge tile immediately before trunk
-            drawW = 20; // Extend slightly to overlap trunk edge
+            gCol = 2; // Right edge grass tile (row 8, col 2)
+            drawW = 20; // Overlap trunk
           } else if (col === 18) {
-            gCol = 8;  // Left corner edge tile immediately after trunk
-            drawX = x - 4; // Shift left to overlap trunk edge
+            gCol = 1; // Left edge grass tile (row 8, col 1)
+            drawX = x - 4; // Overlap trunk
             drawW = 20;
-          } else {
-            // Alternate middle grass tiles for variation
-            const grassCols = [9, 11, 12];
-            gCol = grassCols[col % grassCols.length];
+          } else if (col % 2 === 0) {
+            gCol = 2; // Alternate between 1 and 2 for some texture
           }
 
           // Draw top grass row (starts at top of ground platform)
-          ctx.drawImage(img, gCol * 16, 14 * 16, 16, 16, drawX, Math.round(y), drawW, 17);
+          ctx.drawImage(img, gCol * 16, 8 * 16, 16, 16, drawX, Math.round(y), drawW, 17);
 
           // Draw dirt layers underneath down to the bottom of the viewport
           let row = 1;
-          const dirtCols = [12, 13];
           while (true) {
             const dy = Math.round(y + row * 16);
             if (dy >= VH) break;
 
-            const dCol = dirtCols[(col + row) % dirtCols.length];
-            ctx.drawImage(img, dCol * 16, 15 * 16, 16, 16, drawX, dy, drawW, 17); // 17px height to avoid seams
+            let dCol = gCol; 
+            let dRow = 9; // First dirt layer
+            if (row > 1) dRow = 10; // Deeper dirt layer
+            
+            ctx.drawImage(img, dCol * 16, dRow * 16, 16, 16, drawX, dy, drawW, 17); // 17px height to avoid seams
             row++;
           }
         }
@@ -1029,7 +1139,19 @@
     if (raw && raw.complete && raw.naturalWidth) {
       const dw = b.w;
       const dh = raw.height;
-      const topOffset = b.type === 3 ? 2 : 12;
+      // topOffset shifts the branch image drawing UPwards relative to the screenY hitbox.
+      // We want to align the thick, solid part of the branch with the hitbox.
+      let topOffset;
+      if (isWinterBranch) {
+        // Winter branches are small ~24px tall gifs, middle is a good fit
+        topOffset = 12;
+      } else {
+        // Summer branches
+        // Mapping hitboxes closely to the branch centers (vertical middle of the wood)
+        // branch-03 (type 3): solid woody center is around y=22.
+        // branch-05 (type 5): solid woody center is around y=20.
+        topOffset = b.type === 3 ? 22 : 20;
+      }
       const dx = b.x;
 
       ctx.save();
@@ -1048,11 +1170,41 @@
       const outer = pointsRight ? b.x + b.w - 24 : b.x - 12;
       px(outer, screenY - 18, 36, 22, C.leafNear);
     }
+    
+    // DEBUG: draw the hitboxes
+    if (window.__adminMode) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+      ctx.lineWidth = 2;
+      const hitboxes = getBranchHitboxes(b);
+      for (const h of hitboxes) {
+        const hx = b.x + h.x;
+        const hw = h.w;
+        const htop = toScreenY(b.top + h.yOffset);
+        ctx.strokeRect(Math.round(hx), Math.round(htop), Math.round(hw), 2);
+      }
+      ctx.restore();
+    }
   }
 
     function drawEnemy(e) {
     const sx = e.x;
-    const sy = toScreenY(e.y);
+    
+    // Snap enemy to the precise multi-segment surface
+    let surfaceY = e.y;
+    const branch = game.branches.find(b => b.top === e.y && e.x >= b.x - 30 && e.x <= b.x + b.w + 30);
+    if (branch) {
+      const hitboxes = getBranchHitboxes(branch);
+      for (const h of hitboxes) {
+        const hx = branch.x + h.x;
+        if (e.x >= hx && e.x <= hx + h.w) {
+          surfaceY = branch.top + h.yOffset;
+          break;
+        }
+      }
+    }
+    const sy = toScreenY(surfaceY);
+    
     const type = e.type || 'ant';
     const maxFrames = e.maxFrames || 8;
     const frame = (Math.floor(e.animFrame) % maxFrames) + 1;
@@ -1088,6 +1240,14 @@
       } else {
         px(-13, -23, 26, 23, '#4a2e16');
       }
+      ctx.restore();
+    }
+    
+    if (window.__adminMode) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(Math.round(e.x - e.w / 2), Math.round(sy - e.h / 2), e.w, e.h);
       ctx.restore();
     }
   }
@@ -1356,6 +1516,29 @@
       audio.playBGM();
     }
     requestAnimationFrame(loop);
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'A' && e.shiftKey) { // Shift+A toggles admin mode
+        window.__adminMode = !window.__adminMode;
+        const adminPanel = document.getElementById('admin-panel');
+        if (adminPanel) {
+          if (window.__adminMode) {
+            adminPanel.classList.remove('hidden');
+          } else {
+            adminPanel.classList.add('hidden');
+          }
+        }
+      } else if (window.__adminMode) {
+        if (e.key === 'N' && e.shiftKey) { // Shift+N gives points to level up
+          game.score += game.level * cfg().nutsPerLevel;
+          onScore();
+        } else if (e.key === 'H' && e.shiftKey) { // Shift+H gives an extra life
+          game.lives = Math.min(3, game.lives + 1);
+        } else if (e.key === 'M' && e.shiftKey) { // Shift+M maxes out jump height
+          player.vy = cfg().jumpImpulse * 2;
+        }
+      }
+    });
 
     // Test/debug hooks.
     window.__game = {

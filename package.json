@@ -10,7 +10,11 @@
   "engines": {
     "node": ">=24.0.0"
   },
-  "dependencies": {},
+  "dependencies": {
+    "canvas": "^3.2.3",
+    "playwright": "^1.60.0",
+    "pngjs": "^7.0.0"
+  },
   "devDependencies": {
     "@playwright/test": "^1.49.0"
   }
