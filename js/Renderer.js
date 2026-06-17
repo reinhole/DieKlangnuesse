@@ -46,6 +46,7 @@ export function loadSprites() {
   for (let i = 1; i <= 3; i++) loadImg('acorn' + i, '/SPRITES/misc/acorn/acorn-' + i + '.png');
   loadImg('branch3', '/ENVIRONMENT/props-sliced/branch-03.png');
   loadImg('branch5', '/ENVIRONMENT/props-sliced/branch-05.png');
+  loadImg('woodenSign', '/assets/wooden_sign.png', baseImgs, true);
   for (let i = 1; i <= 8; i++) loadImg('ant' + i, '/SPRITES/enemies/ant/ant-' + i + '.png');
   for (let i = 1; i <= 4; i++) loadImg('gator' + i, '/SPRITES/enemies/gator/gator-' + i + '.png');
   for (let i = 1; i <= 4; i++) loadImg('grasshopper' + i, '/SPRITES/enemies/grasshopper-idle/grasshopper-idle-' + i + '.png');
@@ -191,6 +192,42 @@ function drawTrunk() {
       px(tx + 22, yy + 60, 3, 28, C.barkDark);
     }
   }
+}
+
+
+
+function drawSign(sign) {
+  const sx = sign.x;
+  const sy = toScreenY(sign.y, GameState.cameraY);
+  
+  if (sy < -80 || sy > VH + 80) return; // culling
+  
+  ctx.save();
+  
+  if (imgs.woodenSign.complete && imgs.woodenSign.naturalWidth > 0) {
+    const sw = 80;
+    const sh = 80; 
+    ctx.drawImage(imgs.woodenSign, sx - sw/2, sy - sh/2, sw, sh);
+  }
+  
+  ctx.font = "6px 'Press Start 2P', monospace";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  
+  const lineHeight = 10;
+  const totalHeight = sign.lines.length * lineHeight;
+  const startY = sy - totalHeight / 2 + 21; 
+  
+  for (let i = 0; i < sign.lines.length; i++) {
+    // slight text shadow for depth
+    ctx.fillStyle = "rgba(0,0,0,0.4)";
+    ctx.fillText(sign.lines[i], sx + 1, startY + i * lineHeight + 1);
+    
+    ctx.fillStyle = "#3e2723";
+    ctx.fillText(sign.lines[i], sx, startY + i * lineHeight);
+  }
+  
+  ctx.restore();
 }
 
 function drawBranch(b) {
@@ -564,10 +601,22 @@ export function render() {
   
   ctx.save();
   ctx.scale(ZOOM, ZOOM);
+
+  if (GameState.game && GameState.game.screenshake > 0) {
+    const amt = GameState.game.screenshake;
+    const sx = (Math.random() - 0.5) * amt;
+    const sy = (Math.random() - 0.5) * amt;
+    ctx.translate(sx, sy);
+    GameState.game.screenshake *= 0.85;
+    if (GameState.game.screenshake < 0.5) GameState.game.screenshake = 0;
+  }
   
   drawBackground();
   ctx.translate(-cameraOffX, 0);
   drawTrunk();
+  if (GameState.game.signs) {
+    for (const sign of GameState.game.signs) drawSign(sign);
+  }
   for (const b of GameState.game.branches) drawBranch(b);
   for (const e of GameState.game.enemies || []) drawEnemy(e);
   for (const nut of GameState.game.nuts) drawNut(nut);

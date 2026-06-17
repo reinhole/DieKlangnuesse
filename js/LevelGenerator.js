@@ -27,6 +27,13 @@ export function generateLevel() {
   if (GameState.game.level === 2 && !GameState.game.level2StartY) {
     GameState.game.level2StartY = startY;
   }
+  
+  const tutorialLines = [
+    ["Welcome", "to the", "Climb"],
+    ["Sing", "to jump", "higher"],
+    ["Drop pitch", "to fast", "fall"]
+  ];
+  let signsPlaced = GameState.game.signs ? GameState.game.signs.length : 0;
 
   for (let i = 0; i < numNuts; i++) {
     const top = startY + (i + 1) * spacingY;
@@ -100,8 +107,18 @@ export function generateLevel() {
 
       const branch = { x: bx, w: branchWidth, top: top, type: type, pointsRight: pointsRight };
       
-
       GameState.game.branches.push(branch);
+      
+      if (GameState.game.level === 1 && signsPlaced < tutorialLines.length) {
+        if (opt === selectedOptions[0]) {
+          GameState.game.signs.push({
+            lines: tutorialLines[signsPlaced],
+            x: bx + branchWidth / 2,
+            y: top - 45 // hang perfectly touching the branch bottom
+          });
+          signsPlaced++;
+        }
+      }
       
       const cx = bx + branchWidth / 2;
       const isHeart = (nutIdCounter > 1) && (window.__rng.next() < 0.10);
@@ -143,7 +160,8 @@ export function newGame() {
   if (window.__rng) {
     window.__rng.setSeed(window.__rng.seed);
   }
-  GameState.game = { score: 0, lives: Math.min(3, cfg().startLives), level: 1, enemies: [], particles: [], floatingTexts: [], levelUpTimer: 0 };
+  GameState.game = { score: 0, lives: Math.min(3, cfg().startLives), level: 1, enemies: [], particles: [], floatingTexts: [], signs: [], levelUpTimer: 0 };
+  
   generateLevel();
   placePlayerStart();
   updateThemeClass();
