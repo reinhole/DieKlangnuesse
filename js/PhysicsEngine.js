@@ -49,8 +49,25 @@ export function physicsStep() {
   GameState.player.x = clamp(GameState.player.x + GameState.player.vx, cameraOffX + GameState.player.w / 2, W - cameraOffX - GameState.player.w / 2);
   if (d !== 0) GameState.player.facing = d;
 
-  // Loud peak (or Jump button) launches a jump, only when grounded.
-  if (window.Input.consumeJump() && GameState.player.grounded) {
+  if (GameState.player.grounded) {
+    GameState.player.lastGroundedTime = Date.now();
+  }
+
+  const jumpRequested = window.Input.consumeJump();
+  if (jumpRequested) {
+    GameState.player.jumpBufferTime = Date.now();
+  }
+
+  const timeSinceGrounded = Date.now() - (GameState.player.lastGroundedTime || 0);
+  const timeSinceJump = Date.now() - (GameState.player.jumpBufferTime || 0);
+  
+  const canCoyoteJump = !GameState.player.grounded && GameState.player.vy <= 0 && timeSinceGrounded < 100;
+  const isBufferedJump = GameState.player.grounded && timeSinceJump < 150;
+
+  // Loud peak (or Jump button) launches a jump, considering buffer and coyote time.
+  if ((jumpRequested && (GameState.player.grounded || canCoyoteJump)) || isBufferedJump) {
+    GameState.player.jumpBufferTime = 0; // Consume the buffer
+    
     const jumpInfo = window.Input.lastJumpInfo || { source: "manual", volume: 0.5 };
     if (jumpInfo.source === "voice" && !(window.__testMode && d === 0)) {
       const threshold = c.jumpThreshold;
@@ -81,9 +98,15 @@ export function physicsStep() {
     generateLevel(); 
   }
 
-  // Gravity + vertical integration (world-y up is positive) with tail glide support.
+  // Gravity + vertical integration (world-y up is positive) with tail glide & fast fall support.
   const isGliding = !GameState.player.grounded && GameState.player.vy < 0 && window.Input.isJumpHeld();
-  GameState.player.vy -= isGliding ? (c.gravity * 0.3) : c.gravity;
+  const isFastFalling = !GameState.player.grounded && window.Input.isCrouchHeld();
+  
+  let appliedGravity = c.gravity;
+  if (isGliding) appliedGravity *= 0.3;
+  else if (isFastFalling) appliedGravity *= 2.5;
+
+  GameState.player.vy -= appliedGravity;
   const prevY = GameState.player.y;
   GameState.player.y += GameState.player.vy;
 
@@ -201,12 +224,10 @@ export function physicsStep() {
 
 
 
-  // Camera: smooth follow with snap upward, slow drift downward.
+  // Camera: One-Way Ratchet (follows up, never moves down)
   const targetCamY = Math.max(0, GameState.player.y - c.followOffset);
   if (targetCamY > GameState.cameraY) {
     GameState.cameraY = GameState.cameraY * 0.85 + targetCamY * 0.15;
-  } else {
-    GameState.cameraY = Math.max(GameState.cameraY - 4, targetCamY);
   }
 
   // Falling below the viewport bottom costs a life.
@@ -238,6 +259,7 @@ export function physicsStep() {
 export function loseLife() {
   GameState.game.lives--;
   GameState.player.hurtTimer = 40;
+  GameState.game.screenshake = 15; // Trigger juicy screenshake
   audio.playSFX('hurt');
   spawnParticles(GameState.player.x, GameState.player.y + GameState.player.h / 2, 15, '#b5432f');
   if (GameState.game.lives <= 0) {

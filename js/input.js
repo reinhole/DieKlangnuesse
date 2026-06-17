@@ -40,6 +40,8 @@
   // Rising-edge tracking for the "loud peak = jump" mapping.
   let prevHigh = false;
 
+  let controlMode = "voice"; // "voice" or "keyboard"
+
   function jumpThreshold() {
     const cfg = window.__config || {};
     return cfg.jumpThreshold != null ? cfg.jumpThreshold : 0.7;
@@ -54,12 +56,12 @@
     if (dirOverride !== null) return dirOverride;
     let d = 0;
     
-    if (window.__adminMode) {
+    if (window.__adminMode || controlMode === "keyboard") {
       if (leftHeld) d -= 1;
       if (rightHeld) d += 1;
     }
 
-    if (micActive && currentPitchHz && pitchBaseline) {
+    if (micActive && currentPitchHz && pitchBaseline && controlMode === "voice") {
       const diff = currentPitchHz - pitchBaseline;
       // Provide a deadzone of roughly 40Hz
       if (diff > 40) {
@@ -80,12 +82,12 @@
     const high = vol >= jumpThreshold();
     const edge = high && !prevHigh;
     prevHigh = high;
-    if (jumpQueued && window.__adminMode) {
+    if (jumpQueued && (window.__adminMode || controlMode === "keyboard")) {
       jumpQueued = false;
       window.Input.lastJumpInfo = { source: "manual", volume: vol };
       return true;
     }
-    if (edge) {
+    if (edge && controlMode === "voice") {
       window.Input.lastJumpInfo = { source: "voice", volume: vol };
       return true;
     }
@@ -171,6 +173,17 @@
       currentPitchHz = null;
     }
 
+    const testKnut = document.getElementById("test-tube-knut");
+    const homeScreen = document.getElementById("home-screen");
+    if (testKnut && homeScreen && homeScreen.open) {
+      const y = Math.min(60, norm * 150);
+      let xOffset = 0;
+      if (currentPitchHz && pitchBaseline) {
+        xOffset = Math.max(-50, Math.min(50, currentPitchHz - pitchBaseline));
+      }
+      testKnut.style.transform = `translate(calc(-50% + ${xOffset}px), -${y}px)`;
+    }
+
     updateMeter();
     requestAnimationFrame(sampleMic);
   }
@@ -185,6 +198,15 @@
       });
     }
 
+    const toggleBtn = document.getElementById("btn-toggle-control");
+    if (toggleBtn) {
+      toggleBtn.addEventListener("click", () => {
+        controlMode = controlMode === "voice" ? "keyboard" : "voice";
+        toggleBtn.textContent = controlMode === "voice" ? "Voice" : "Keyboard";
+        if (controlMode === "voice") enableMic();
+      });
+    }
+
 
 
     const micBtn = $("btn-mic");
@@ -195,7 +217,7 @@
       else if (e.key === "ArrowRight") rightHeld = true;
       else if (e.key === "ArrowDown" || e.key === "s" || e.key === "S") crouchHeld = true;
       else if (e.key === " " || e.key === "ArrowUp") {
-        jumpQueued = true;
+        if (!e.repeat) jumpQueued = true;
         jumpHeld = true;
       }
     });
@@ -224,12 +246,13 @@
     crouchOverride = c === null ? null : !!c;
   };
 
-  const isJumpHeld = () => (jumpHeld && window.__adminMode) || getVolume() >= jumpThreshold();
-  const isCrouchHeld = () => crouchOverride !== null ? crouchOverride : (crouchHeld && window.__adminMode);
+  const isJumpHeld = () => (jumpHeld && (window.__adminMode || controlMode === "keyboard")) || (controlMode === "voice" && getVolume() >= jumpThreshold());
+  const isCrouchHeld = () => crouchOverride !== null ? crouchOverride : ((crouchHeld && (window.__adminMode || controlMode === "keyboard")) || (controlMode === "voice" && getVolume() < 0.05));
   const isMicActive = () => micActive;
   const isKeyboardMoving = () => leftHeld || rightHeld;
+  const getControlMode = () => controlMode;
 
-  window.Input = { getVolume, getDirection, consumeJump, isJumpHeld, isCrouchHeld, enableMic, updateMeter, isMicActive, isKeyboardMoving, lastJumpInfo: { source: null, volume: 0 } };
+  window.Input = { getVolume, getDirection, consumeJump, isJumpHeld, isCrouchHeld, enableMic, updateMeter, isMicActive, isKeyboardMoving, getControlMode, lastJumpInfo: { source: null, volume: 0 } };
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", bind);
