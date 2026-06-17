@@ -13,8 +13,8 @@ export function generateLevel() {
     GameState.game.nuts = [];
     GameState.game.enemies = [];
     GameState.game.particles = [];
-    // Ground platform spanning the whole width.
-    GameState.game.branches.push({ x: 0, w: W, top: 40, ground: true });
+    // Ground platform spanning the floating island width (centered).
+    GameState.game.branches.push({ x: 44, w: 392, top: 40, ground: true });
   }
 
   const numNuts = c.nutsPerLevel + (GameState.game.level - 1);

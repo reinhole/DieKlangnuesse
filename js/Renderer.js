@@ -52,6 +52,7 @@ export function loadSprites() {
   for (let i = 1; i <= 2; i++) loadImg('hurt' + i, '/SPRITES/player/hurt/player-hurt-' + i + '.png');
   loadImg('tileset', '/ENVIRONMENT/tileset.png');
   loadImg('trunk', '/ENVIRONMENT/trunk-repeat.png');
+  loadImg('trunkBase', '/ENVIRONMENT/trunk-base.png');
 
   const fPrefix = '/assets/fort-of-illusion/Layers/';
   const wPrefix = '/assets/sunnyland-winter/';
@@ -98,11 +99,15 @@ function drawBgLayer(img, speed, shouldLoop = false, anchorToFloor = false, yOff
 
 function drawBackground() {
   const floorY = toScreenY(40, GameState.cameraY);
+  const baseImg = imgs.trunkBase;
+  const hasBase = baseImg && baseImg.complete && baseImg.naturalWidth;
   
   ctx.save();
-  ctx.beginPath();
-  ctx.rect(0, 0, W, floorY);
-  ctx.clip();
+  if (!hasBase) {
+    ctx.beginPath();
+    ctx.rect(0, 0, W, floorY);
+    ctx.clip();
+  }
 
   // Sky fill as fallback while images load.
   const grad = ctx.createLinearGradient(0, 0, 0, VH);
@@ -121,7 +126,7 @@ function drawBackground() {
   ctx.restore();
 
   // Draw solid color underground to prevent transparency issues
-  if (floorY < VH) {
+  if (!hasBase && floorY < VH) {
     ctx.fillStyle = '#1e110c'; // Dark earthy color
     ctx.fillRect(0, floorY, W, VH - floorY);
   }
@@ -129,6 +134,8 @@ function drawBackground() {
 
 function drawTrunk() {
   const img = imgs.trunk;
+  const baseImg = imgs.trunkBase;
+  const hasBase = baseImg && baseImg.complete && baseImg.naturalWidth;
 
   if (img && img.complete && img.naturalWidth) {
     const tx = W / 2 - 48;
@@ -145,12 +152,33 @@ function drawTrunk() {
     const startK = Math.floor((minVisibleY - trunkStartY) / h);
     const endK = Math.ceil((maxVisibleY - trunkStartY) / h);
 
+    // Ground top Y is 40. The top of the trunk base image is at Y = 100, ground is at Y = 800 in 904x1016 image.
+    // Scale factor is 96 / 221.
+    // The top of the trunk base is at world Y = 40 + 800 * (96 / 221) = 387.51.
+    const scale = 96 / 221;
+    const trunkBaseTopY = 40 + 800 * scale;
+
     for (let k = startK; k <= endK; k++) {
       const wy = trunkStartY + k * h;
+      
+      // Skip repeating trunk segments that are completely covered by the trunk base
+      if (hasBase && wy + h <= trunkBaseTopY) {
+        continue;
+      }
+      
       const screenY = Math.floor(toScreenY(wy + h, GameState.cameraY));
       
       // Draw exactly h pixels (no +1 stretching hack) to maintain perfect seamless pixels
       ctx.drawImage(img, Math.floor(tx), screenY, 96, h);
+    }
+
+    // Draw trunk base on top
+    if (hasBase) {
+      const dw = 904 * scale;
+      const dh = 1016 * scale;
+      const dx = W / 2 - 463 * scale;
+      const screenY = toScreenY(trunkBaseTopY, GameState.cameraY);
+      ctx.drawImage(baseImg, Math.round(dx), Math.round(screenY), Math.round(dw), Math.round(dh));
     }
   } else {
     // Fallback: procedural bark rectangle while assets load
@@ -170,6 +198,14 @@ function drawBranch(b) {
     const y = Math.floor(toScreenY(b.top, GameState.cameraY));
     const img = imgs.tileset;
     const hasTileset = img && img.complete && img.naturalWidth;
+    const baseImg = imgs.trunkBase;
+    const hasBase = baseImg && baseImg.complete && baseImg.naturalWidth;
+
+    if (hasBase) {
+      // The new ground + tree bottom graphic already contains the ground surface,
+      // so we do not draw any tileset ground tiles.
+      return;
+    }
 
     if (hasTileset) {
       // Tile size is 16. Draw ground tiles across the width of W = 480 (30 columns)
