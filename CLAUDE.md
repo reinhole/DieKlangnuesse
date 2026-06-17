@@ -58,6 +58,10 @@ the test tooling.
 5. **`data-testid` values are a stable contract.** Renaming/removing one means
    updating `tests/game.spec.js` in the same change. CSS classes and `id`s may
    change freely.
+6. **Commit messages MUST follow the Conventional Commits specification.** All
+   commits (from both humans and agents) must use standard conventional commit
+   prefixes (e.g., `feat:`, `fix:`, `docs:`, `style:`, `refactor:`, `test:`, `chore:`).
+   A `commit-msg` git hook validates this format before commits are accepted.
 
 ## Test/debug hooks (exposed on `window`)
 
