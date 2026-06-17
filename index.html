@@ -198,28 +198,84 @@
           height="640"
         ></canvas>
 
-        <!-- Story Screen Overlay -->
-        <dialog id="story-screen" class="overlay-screen" data-testid="story-screen">
-          <div class="overlay-panel story-panel">
-            <h2 class="story-title">Maestro Frog:</h2>
-            <div class="story-text">
-              <p>Ah, the silent squirrel... Have you lost your voice?</p>
-              <p>Tragic! You must sing to the trees to find your melody again. The pitch of your voice will guide you left and right. Shout to push away your enemies.</p>
-              <p>Now, go! Ascend the branches!</p>
+        <!-- Speedrun HUD -->
+        <div id="speedrun-hud" class="speedrun-hud">
+          <div id="timer-val">00:00.00</div>
+          <div id="split-diff" class="split-diff hidden"></div>
+        </div>
+
+        <!-- Home Screen Hub Overlay -->
+        <dialog id="home-screen" class="overlay-screen full-window" data-testid="home-screen">
+          <div class="home-panel">
+            <div class="hero-section">
+              <h1 class="home-title">Symphony<br>of the<br>Forest</h1>
             </div>
-            <button id="btn-start-story" class="btn btn-reset">Start Singing</button>
+            
+            <div class="home-content-wrapper">
+              <div class="tab-nav">
+                <button id="btn-tab-adventure" class="btn tab-btn active">Adventure</button>
+                <button id="btn-tab-shrine" class="btn tab-btn">Shrine</button>
+                <button id="btn-tab-logbook" class="btn tab-btn">Logbook</button>
+              </div>
+            
+            <!-- Adventure Tab -->
+            <div id="content-adventure" class="tab-content">
+              <div class="control-toggle">
+                <span class="mode-label">Mode:</span>
+                <button id="btn-toggle-control" class="btn btn-mode">Voice Control</button>
+                <button id="btn-open-settings" class="btn btn-settings" aria-label="Settings">⚙️</button>
+              </div>
+              <div class="calibration-section">
+                <p>Mic Calibration</p>
+                <div class="test-tube">
+                  <div id="test-tube-knut" class="test-knut"></div>
+                </div>
+              </div>
+              <button id="btn-start-adventure" class="btn btn-start-adventure">START CLIMB</button>
+            </div>
+            
+            <!-- Shrine Tab -->
+            <div id="content-shrine" class="tab-content hidden">
+              <div class="acorn-balance">Golden Acorns: <span id="acorn-count">0</span></div>
+              <div class="upgrade-list">
+                <button class="btn btn-upgrade" data-upgrade="resonantLungs">Resonant Lungs Lvl <span class="upg-lvl" id="upg-lvl-resonantLungs">0</span></button>
+                <button class="btn btn-upgrade" data-upgrade="bellowingVoice">Bellowing Voice Lvl <span class="upg-lvl" id="upg-lvl-bellowingVoice">0</span></button>
+                <button class="btn btn-upgrade" data-upgrade="acornAttractor">Acorn Attractor Lvl <span class="upg-lvl" id="upg-lvl-acornAttractor">0</span></button>
+                <button class="btn btn-upgrade" data-upgrade="fluffyTail">Fluffy Tail Lvl <span class="upg-lvl" id="upg-lvl-fluffyTail">0</span></button>
+              </div>
+            </div>
+            
+            <!-- Logbook Tab -->
+            <div id="content-logbook" class="tab-content hidden">
+              <div class="stats-grid">
+                <div>Runs: <span id="stat-runs">0</span></div>
+                <div>Max Height: <span id="stat-height">0</span>m</div>
+                <div>Total Nuts: <span id="stat-nuts">0</span></div>
+                <div>Any% PB: <span id="stat-pb">--:--.--</span></div>
+              </div>
+              <div class="save-tools">
+                <button id="btn-export-save" class="btn save-btn">Export Save Data</button>
+                <input type="text" id="import-save-input" placeholder="Paste Base64 Save String..." />
+                <button id="btn-import-save" class="btn save-btn">Import Save Data</button>
+              </div>
+            </div>
+
           </div>
         </dialog>
 
         <!-- Death Screen Overlay -->
-        <dialog id="death-screen" class="overlay-screen" data-testid="death-screen">
-          <div class="overlay-panel">
+        <dialog id="death-screen" class="overlay-screen full-window" data-testid="death-screen">
+          <div class="death-panel">
             <h2 class="death-title">GAME OVER</h2>
             <div class="death-stats">
+              <div class="death-stat">Height: <span data-testid="death-height">0m</span></div>
               <div class="death-stat">Score: <span data-testid="death-score">0</span></div>
-              <div class="death-stat">Level: <span data-testid="death-level">1</span></div>
+              <div class="death-stat">Time: <span data-testid="death-time">00:00</span></div>
             </div>
-            <button data-testid="btn-death-reset" class="btn btn-reset btn-death-reset">Play Again</button>
+            <div style="display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 400px;">
+              <button data-testid="btn-death-reset" class="btn btn-death-reset">Play Again</button>
+              <button data-testid="btn-death-home" class="btn btn-death-home" style="background: var(--panel-light); border-color: var(--accent); padding: 10px; font-size: 14px;">Return to Hub</button>
+            </div>
           </div>
         </dialog>
 
@@ -228,6 +284,27 @@
           <div class="level-up-panel">
             <h2 class="level-up-title">LEVEL UP!</h2>
             <div class="level-up-subtitle">Ready for Level <span data-testid="level-up-num">2</span></div>
+          </div>
+        </dialog>
+
+        <!-- Pause Menu Overlay -->
+        <dialog id="pause-menu" class="overlay-screen">
+          <div class="overlay-panel">
+            <h2 class="death-title">PAUSED</h2>
+            <button id="btn-resume" class="btn btn-reset" style="margin-bottom: 10px;">Resume</button>
+            <button id="btn-abort" class="btn btn-reset" style="background: var(--warn);">Abort Run</button>
+          </div>
+        </dialog>
+
+        <!-- Settings Dialog -->
+        <dialog id="settings-menu" class="overlay-screen">
+          <div class="overlay-panel settings-panel">
+            <h2 class="story-title">Settings</h2>
+            <div class="settings-row"><label>Master</label><input type="range" id="set-master" min="0" max="100" value="100"></div>
+            <div class="settings-row"><label>Music</label><input type="range" id="set-music" min="0" max="100" value="80"></div>
+            <div class="settings-row"><label>SFX</label><input type="range" id="set-sfx" min="0" max="100" value="100"></div>
+            <div class="settings-row"><label>Mic Sens</label><input type="range" id="set-mic" min="0" max="100" value="50"></div>
+            <button id="btn-close-settings" class="btn btn-reset" style="margin-top: 15px; width: 100%;">Close</button>
           </div>
         </dialog>
       </div>

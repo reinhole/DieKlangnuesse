@@ -1,5 +1,5 @@
 import { GameState } from './GameState.js';
-import { cfg } from './Config.js';
+import { cfg, toScreenY, VH, W } from './Config.js';
 
 const elCache = new Map();
 export const $ = (id) => {
@@ -189,6 +189,10 @@ export function syncDOM() {
         if (deathScore) deathScore.textContent = String(GameState.game.score);
         const deathLevel = $("death-level");
         if (deathLevel) deathLevel.textContent = String(GameState.game.level);
+        const deathHeight = $("death-height");
+        if (deathHeight) deathHeight.textContent = `${lastState.height}m`;
+        const deathTime = $("death-time");
+        if (deathTime) deathTime.textContent = GameState.game.runTimeStr || "00:00";
       } else {
         if (cachedDeathScreen.open) cachedDeathScreen.close();
       }
@@ -196,17 +200,34 @@ export function syncDOM() {
     }
   }
 
-  // Story screen overlay sync
-  const storyScreen = document.getElementById("story-screen");
-  if (storyScreen) {
-    const isStory = GameState.state === "Story";
-    if (lastState.storyScreen !== isStory) {
-      if (isStory) {
-        if (!storyScreen.open) storyScreen.showModal();
+  // Home screen overlay sync
+  const homeScreen = document.getElementById("home-screen");
+  if (homeScreen) {
+    const isHome = GameState.state === "Home";
+    if (lastState.homeScreen !== isHome) {
+      if (isHome) {
+        if (!homeScreen.open) homeScreen.showModal();
       } else {
-        if (storyScreen.open) storyScreen.close();
+        if (homeScreen.open) homeScreen.close();
       }
-      lastState.storyScreen = isStory;
+      lastState.homeScreen = isHome;
+    }
+  }
+
+  // Pause menu overlay and blur sync
+  const pauseMenu = document.getElementById("pause-menu");
+  const canvasContainer = document.querySelector(".canvas-container");
+  if (pauseMenu) {
+    const isPaused = GameState.state === "Paused";
+    if (lastState.pauseMenu !== isPaused) {
+      if (isPaused) {
+        if (!pauseMenu.open) pauseMenu.showModal();
+        if (canvasContainer) canvasContainer.classList.add("blur-effect");
+      } else {
+        if (pauseMenu.open) pauseMenu.close();
+        if (canvasContainer) canvasContainer.classList.remove("blur-effect");
+      }
+      lastState.pauseMenu = isPaused;
     }
   }
 
@@ -223,6 +244,27 @@ export function syncDOM() {
         if (cachedLevelUpScreen.open) cachedLevelUpScreen.close();
       }
       lastState.levelUpTimer = isLevelUp;
+    }
+  }
+
+  // Tutorial Signs Sync
+  const signsContainer = document.getElementById('signs-container');
+  if (signsContainer && GameState.game.signs) {
+    let html = '';
+    for (const sign of GameState.game.signs) {
+      const sy = toScreenY(sign.y, GameState.cameraY);
+      if (sy < -100 || sy > VH + 100) continue;
+      
+      const pctY = (sy / VH) * 100;
+      const pctX = (sign.x / W) * 100;
+      html += `<div class="tutorial-sign" style="top: ${pctY}%; left: ${pctX}%;">`;
+      html += sign.lines.join('<br>');
+      html += `</div>`;
+    }
+    // Only update if changed
+    if (signsContainer._lastHtml !== html) {
+      signsContainer.innerHTML = html;
+      signsContainer._lastHtml = html;
     }
   }
 

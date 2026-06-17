@@ -73,13 +73,55 @@ function init() {
     deathReset.addEventListener("click", onReset);
   }
 
-  const startStoryBtn = document.getElementById("btn-start-story");
-  if (startStoryBtn) {
-    startStoryBtn.addEventListener("click", () => {
+  const tabs = ['adventure', 'shrine', 'logbook'];
+  tabs.forEach(tab => {
+    const btn = document.getElementById(`btn-tab-${tab}`);
+    if (btn) {
+      btn.addEventListener('click', () => {
+        tabs.forEach(t => {
+          document.getElementById(`btn-tab-${t}`).classList.remove('active');
+          document.getElementById(`content-${t}`).classList.add('hidden');
+        });
+        btn.classList.add('active');
+        document.getElementById(`content-${tab}`).classList.remove('hidden');
+      });
+    }
+  });
+
+  const btnSettings = document.getElementById('btn-open-settings');
+  const btnCloseSettings = document.getElementById('btn-close-settings');
+  const settingsMenu = document.getElementById('settings-menu');
+  if (btnSettings && settingsMenu) {
+    btnSettings.addEventListener('click', () => settingsMenu.showModal());
+    btnCloseSettings.addEventListener('click', () => settingsMenu.close());
+  }
+
+  const btnResume = document.getElementById('btn-resume');
+  const btnAbort = document.getElementById('btn-abort');
+  if (btnResume) btnResume.addEventListener('click', onPause);
+  if (btnAbort) btnAbort.addEventListener('click', () => {
+    GameState.game.lives = 0;
+    setState("Game Over");
+  });
+
+  const btnDeathReset = document.querySelector('[data-testid="btn-death-reset"]');
+  if (btnDeathReset) btnDeathReset.addEventListener("click", () => {
+    newGame();
+    setState("Running");
+  });
+
+  const btnDeathHome = document.querySelector('[data-testid="btn-death-home"]');
+  if (btnDeathHome) btnDeathHome.addEventListener("click", () => {
+    newGame();
+    setState("Home");
+  });
+
+  const startAdvBtn = document.getElementById("btn-start-adventure");
+  if (startAdvBtn) {
+    startAdvBtn.addEventListener("click", () => {
       setState("Running");
       if (!window.__testMode) {
         audio.playBGM();
-        // Prompt for mic automatically when starting
         if (window.Input && window.Input.enableMic) {
           window.Input.enableMic();
         }
@@ -88,7 +130,7 @@ function init() {
   }
 
   newGame();
-  setState("Story");
+  setState("Home");
   requestAnimationFrame(loop);
 
   // --- Admin Mode Actions ---
@@ -165,6 +207,9 @@ function init() {
   bindSlider('admin-speed', 'admin-speed-val', 'tickMs');
 
   window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (GameState.state === "Running" || GameState.state === "Paused") onPause();
+    }
     if (e.key === 'A' && e.shiftKey) { toggleAdmin(); }
     else if (window.__adminMode) {
       if (e.key === 'N' && e.shiftKey) adminActions.teleportUp();

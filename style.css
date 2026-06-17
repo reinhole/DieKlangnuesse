@@ -135,6 +135,32 @@ body {
   gap: 12px;
 }
 
+#signs-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.tutorial-sign {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 14px;
+  color: var(--ink);
+  text-align: center;
+  line-height: 1.8;
+  text-shadow: 2px 2px 0 #000, 
+               -2px -2px 0 #000, 
+               2px -2px 0 #000, 
+               -2px 2px 0 #000, 
+               0px 4px 0 rgba(0,0,0,0.5);
+  letter-spacing: 1px;
+}
+
 .level-indicator {
   display: flex;
   align-items: baseline;
@@ -519,48 +545,86 @@ dialog.overlay-screen::backdrop {
   animation: fadeIn 0.4s ease-out;
 }
 
+/* Dialog Screen full window base */
+dialog.full-window {
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#death-screen.full-window {
+  background: rgba(26, 18, 40, 0.85);
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.4) 2px,
+    rgba(0, 0, 0, 0.4) 4px
+  );
+}
+
+#home-screen.full-window {
+  background: var(--bg);
+  /* Cool retro dotted pattern */
+  background-image: radial-gradient(var(--panel-light) 15%, transparent 16%), 
+                    radial-gradient(var(--panel-light) 15%, transparent 16%);
+  background-size: 30px 30px;
+  background-position: 0 0, 15px 15px;
+}
+
+dialog.full-window::backdrop {
+  display: none;
+}
+
 /* Hidden state for screen overlays (kept for backwards compat just in case) */
 .hidden {
   display: none !important;
 }
 
-/* Death Screen retro panel */
-.overlay-panel {
-  background: var(--panel);
-  border: 4px solid var(--accent);
-  border-radius: 0; /* Boxy */
-  padding: 30px;
-  width: 280px;
-  text-align: center;
-  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.8), inset -4px -4px 0 rgba(0, 0, 0, 0.4);
-  transform: scale(1);
-  animation: popIn 0.3s steps(4, end);
+/* Death Screen full window */
+.death-panel {
+  background: transparent;
+  border: none;
+  padding: 5vh 5vw;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  box-shadow: none;
 }
 
 .death-title {
   margin-top: 0;
-  margin-bottom: 20px;
-  font-size: 20px;
+  margin-bottom: 30px;
+  font-size: 28px;
   color: var(--warn);
-  text-shadow: 2px 2px 0 #000;
+  text-shadow: 3px 3px 0 #000;
   letter-spacing: 2px;
   animation: pulse 1.5s steps(2, end) infinite;
 }
 
 .death-stats {
-  background: var(--bg);
-  border: 2px solid var(--panel-light);
+  background: var(--panel);
+  border: 4px solid var(--panel-light);
   border-radius: 0;
-  padding: 15px;
-  margin-bottom: 25px;
+  padding: 20px;
+  margin-bottom: 30px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  box-shadow: inset 4px 4px 0 rgba(0,0,0,0.3);
+  gap: 15px;
+  box-shadow: inset 4px 4px 0 rgba(0,0,0,0.5);
+  width: 100%;
+  max-width: 400px;
 }
 
 .death-stat {
-  font-size: 10px;
+  font-size: 14px;
   display: flex;
   justify-content: space-between;
   color: var(--ink);
@@ -573,8 +637,9 @@ dialog.overlay-screen::backdrop {
 
 .btn-death-reset {
   width: 100%;
-  font-size: 16px;
-  padding: 10px;
+  max-width: 400px;
+  font-size: 18px;
+  padding: 15px;
   border-color: var(--accent);
   background: var(--good);
 }
@@ -685,4 +750,311 @@ dialog#level-up-screen[open] {
 }
 #btn-start-story:hover {
   background: #5d7019;
+}
+
+/* Speedrun HUD */
+.speedrun-hud {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(26, 28, 44, 0.8);
+  border: 2px solid var(--accent);
+  padding: 4px 8px;
+  z-index: 5;
+  text-align: right;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.8);
+}
+
+#timer-val {
+  color: #fff;
+  font-size: 14px;
+  text-shadow: 1px 1px 0 #000;
+}
+
+.split-diff {
+  font-size: 10px;
+  margin-top: 4px;
+}
+
+.split-diff.green {
+  color: var(--good);
+}
+
+.split-diff.red {
+  color: var(--warn);
+}
+
+/* Home Screen Hub */
+.home-panel {
+  background: transparent;
+  border: none;
+  padding: 5vh 5vw;
+  width: 100vw;
+  height: 100vh;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.hero-section {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.home-title {
+  color: var(--accent);
+  font-size: 42px;
+  line-height: 1.3;
+  text-align: center;
+  margin: 0;
+  text-shadow: 6px 6px 0 var(--accent-dark), 0px 8px 0 #000;
+  letter-spacing: 2px;
+}
+
+.home-content-wrapper {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.tab-nav {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 0;
+}
+
+.tab-btn {
+  flex: 1;
+  font-family: inherit;
+  font-size: 10px;
+  padding: 12px 4px;
+  background: var(--panel-light);
+  color: var(--ink);
+  border: 4px solid var(--accent-dark);
+  border-bottom: none;
+  cursor: pointer;
+  text-align: center;
+  box-shadow: inset 3px 3px 0 rgba(255,255,255,0.1);
+  margin-top: 6px;
+}
+
+.tab-btn:hover {
+  background: var(--panel);
+}
+
+.tab-btn.active {
+  background: var(--bg);
+  color: var(--accent);
+  border-color: var(--accent);
+  border-bottom: none;
+  padding-bottom: 16px;
+  margin-top: 0;
+  z-index: 2;
+  position: relative;
+  box-shadow: none;
+}
+
+.tab-content {
+  background: var(--bg);
+  border: 4px solid var(--accent);
+  padding: 25px;
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: relative;
+  z-index: 1;
+  margin-top: -4px;
+  box-shadow: inset 4px 4px 0 rgba(0,0,0,0.5);
+}
+
+/* Adventure Tab */
+.control-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  font-size: 10px;
+  background: var(--panel);
+  padding: 12px;
+  border: 4px solid var(--panel-light);
+  box-shadow: inset -2px -2px 0 rgba(0,0,0,0.3);
+}
+
+.mode-label {
+  color: var(--ink);
+  text-shadow: 2px 2px 0 #000;
+}
+
+.btn-mode {
+  padding: 10px 16px;
+  background: var(--accent-dark);
+  color: #fff;
+  border-color: #000;
+  min-width: 140px;
+  font-size: 10px;
+}
+
+.btn-settings {
+  padding: 8px;
+  background: var(--panel-light);
+  border-color: #000;
+  font-size: 14px;
+}
+
+.calibration-section {
+  text-align: center;
+}
+
+.calibration-section p {
+  color: var(--ink);
+  font-size: 10px;
+  margin-bottom: 15px;
+  text-shadow: 2px 2px 0 #000;
+}
+
+.test-tube {
+  margin: 0 auto;
+  width: 220px;
+  height: 28px;
+  background: #000;
+  border: 4px solid var(--panel-light);
+  border-radius: 14px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 4px 4px 0 rgba(0,0,0,0.8);
+}
+
+.test-knut {
+  width: 0%; /* Default width, overridden by JS */
+  height: 100%;
+  background: var(--accent);
+  position: absolute;
+  top: 0;
+  left: 0;
+  transition: width 0.1s ease-out;
+  box-shadow: inset 0 -4px 0 rgba(0,0,0,0.2), inset 0 4px 0 rgba(255,255,255,0.2);
+}
+
+.btn-start-adventure {
+  width: 100%;
+  margin-top: auto;
+  background: var(--good);
+  border-color: #25542a;
+  padding: 16px;
+  font-size: 14px;
+  color: #000;
+  text-shadow: 1px 1px 0 rgba(255,255,255,0.5);
+  box-shadow: inset -4px -4px 0 rgba(0,0,0,0.2), inset 4px 4px 0 rgba(255,255,255,0.4), 0 4px 0 #000;
+}
+
+.btn-start-adventure:hover {
+  background: #5ade90;
+}
+
+.btn-start-adventure:active {
+  transform: translateY(4px);
+  box-shadow: inset 4px 4px 0 rgba(0,0,0,0.4), 0 0 0 #000;
+}
+
+/* Shrine Tab */
+.acorn-balance {
+  font-size: 12px;
+  color: var(--accent);
+  text-align: center;
+  text-shadow: 2px 2px 0 #000;
+  background: var(--panel);
+  padding: 10px;
+  border: 2px dashed var(--accent-dark);
+}
+
+.upgrade-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  max-height: 150px;
+  padding-right: 5px;
+}
+
+.btn-upgrade {
+  font-size: 8px;
+  text-align: left;
+  padding: 12px;
+  background: var(--panel-light);
+  line-height: 1.5;
+}
+
+/* Logbook Tab */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  font-size: 8px;
+  line-height: 1.8;
+  background: var(--panel);
+  padding: 15px;
+  border: 4px solid var(--panel-light);
+  box-shadow: inset 4px 4px 0 rgba(0,0,0,0.5);
+}
+
+.stats-grid span {
+  color: var(--accent);
+  font-size: 10px;
+}
+
+.save-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.save-btn {
+  font-size: 8px;
+  padding: 10px;
+  text-align: center;
+}
+
+.save-tools input {
+  font-family: inherit;
+  font-size: 8px;
+  padding: 10px;
+  background: #000;
+  color: var(--ink);
+  border: 4px solid var(--panel-light);
+  box-shadow: inset 4px 4px 0 rgba(0,0,0,0.8);
+  outline: none;
+}
+
+.save-tools input:focus {
+  border-color: var(--accent);
+}
+
+/* Settings Menu */
+.settings-panel {
+  width: 320px;
+  padding: 25px;
+}
+
+.settings-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  margin-bottom: 15px;
+  background: var(--panel);
+  padding: 10px;
+  border: 2px solid var(--panel-light);
+}
+
+.settings-row input[type=range] {
+  width: 120px;
+}
+
+/* Pause Blur */
+.blur-effect {
+  filter: blur(8px);
 }
