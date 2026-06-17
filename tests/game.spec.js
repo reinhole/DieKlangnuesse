@@ -390,5 +390,21 @@ test('defeating an enemy awards 1 point', async ({ page }) => {
   await expect(page.getByTestId('score')).toHaveText('1');
 });
 
+test('shows height counter in meters in the leveling bar', async ({ page }) => {
+  await boot(page);
+  const heightCounter = page.getByTestId('height-display');
+  await expect(heightCounter).toHaveText('0m');
+
+  // Jump to go higher
+  await setDirection(page, 0);
+  await setVolume(page, 1);
+  await step(page, 15);
+  
+  // Height should now be greater than 0m
+  const text = await heightCounter.textContent();
+  const heightVal = parseInt(text.replace('m', ''), 10);
+  expect(heightVal).toBeGreaterThan(0);
+});
+
 
 

@@ -77,7 +77,8 @@ export function buildNutDOM() {
 let lastState = {
   score: -1, lives: -1, level: -1, remaining: -1,
   deathScreen: null, levelUpTimer: -1, themeWinter: null,
-  peGrounded: null, peX: null, peY: null
+  peGrounded: null, peX: null, peY: null,
+  height: -1
 };
 
 // Caches for non-testid elements
@@ -86,6 +87,7 @@ let cachedLvlVal = null;
 let cachedScoreBar = null;
 let cachedDeathScreen = null;
 let cachedLevelUpScreen = null;
+let cachedHeightVal = null;
 
 export function syncDOM() {
   if (!GameState.game) return;
@@ -129,6 +131,16 @@ export function syncDOM() {
     const endY = GameState.game.topY - 800;
     const progress = Math.max(0, Math.min(100, ((GameState.player.y - GameState.game.levelStartY) / (endY - GameState.game.levelStartY)) * 100));
     cachedScoreBar.style.width = `${progress}%`;
+  }
+
+  // Sync height display (relative to ground Y=40, scaled: 10 units = 1 meter)
+  const currentHeight = Math.max(0, Math.round((GameState.player.y - 40) / 10));
+  if (lastState.height !== currentHeight) {
+    if (!cachedHeightVal) cachedHeightVal = document.getElementById("height-display");
+    if (cachedHeightVal) {
+      cachedHeightVal.textContent = `${currentHeight}m`;
+    }
+    lastState.height = currentHeight;
   }
 
   const pe = $("player");

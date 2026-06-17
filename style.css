@@ -177,6 +177,20 @@ body {
 
 .score-bar-wrapper {
   width: 100%;
+  position: relative;
+}
+
+.height-display {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 8px;
+  color: var(--ink);
+  font-family: 'Press Start 2P', "Courier New", monospace;
+  text-shadow: 1px 1px 0 #000;
+  pointer-events: none;
+  white-space: nowrap;
 }
 
 .score-bar {
