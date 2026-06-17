@@ -1,5 +1,6 @@
 import { GameState } from './GameState.js';
 import { cfg, toScreenY, VH, W } from './Config.js';
+import { statsManager } from './StatsManager.js';
 
 const elCache = new Map();
 export const $ = (id) => {
@@ -21,6 +22,53 @@ export function updateThemeClass() {
     updateThemeColors();
   }
 }
+
+export function syncStatsUI() {
+  const sm = statsManager.state;
+  
+  // Logbook
+  const elRuns = document.getElementById("stat-runs");
+  if (elRuns) elRuns.textContent = sm.logbook.runs;
+  const elHeight = document.getElementById("stat-height");
+  if (elHeight) elHeight.textContent = sm.logbook.maxHeight;
+  const elNuts = document.getElementById("stat-nuts");
+  if (elNuts) elNuts.textContent = sm.logbook.totalNuts;
+  const elPB = document.getElementById("stat-pb");
+  if (elPB) elPB.textContent = sm.logbook.anyPB || "--:--.--";
+
+  // Shrine
+  const elAcorns = document.getElementById("acorn-count");
+  if (elAcorns) elAcorns.textContent = sm.currency.goldenAcorns;
+
+  ["resonantLungs", "bellowingVoice", "acornAttractor", "fluffyTail"].forEach(upg => {
+    const lvlEl = document.getElementById(`upg-lvl-${upg}`);
+    if (lvlEl) {
+      const lvl = sm.upgrades[upg];
+      lvlEl.textContent = lvl;
+      
+      const btn = lvlEl.closest('.btn-upgrade');
+      if (btn) {
+        const cost = statsManager.getUpgradeCost(lvl);
+        if (cost === -1) {
+          btn.classList.add('maxed');
+          btn.style.opacity = '0.5';
+          btn.title = "MAX LEVEL";
+        } else if (sm.currency.goldenAcorns < cost) {
+          btn.classList.add('disabled');
+          btn.style.opacity = '0.5';
+          btn.title = `Costs ${cost} Acorns`;
+        } else {
+          btn.classList.remove('disabled', 'maxed');
+          btn.style.opacity = '1';
+          btn.title = `Costs ${cost} Acorns`;
+        }
+      }
+    }
+  });
+}
+
+// Ensure event listener for updates triggers sync
+window.addEventListener('stats-updated', syncStatsUI);
 
 export function updateThemeColors() {
   const style = getComputedStyle(document.documentElement);
@@ -206,7 +254,10 @@ export function syncDOM() {
     const isHome = GameState.state === "Home";
     if (lastState.homeScreen !== isHome) {
       if (isHome) {
-        if (!homeScreen.open) homeScreen.showModal();
+        if (!homeScreen.open) {
+            homeScreen.showModal();
+            syncStatsUI();
+        }
       } else {
         if (homeScreen.open) homeScreen.close();
       }

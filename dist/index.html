@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Die Klangnüsse</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="/assets/index-BL5wlqbq.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-D1lSxC08.css">
+</head>
+<body>
+  <!-- Inline SVG Sprite for CSS Variable Support -->
+  <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+    <symbol id="icon-heart" viewBox="-1 -1 11 10" shape-rendering="crispEdges">
+      <g class="heart-shape">
+        <rect x="2" y="0" width="2" height="1" />
+        <rect x="5" y="0" width="2" height="1" />
+        <rect x="1" y="1" width="7" height="1" />
+        <rect x="0" y="2" width="9" height="2" />
+        <rect x="1" y="4" width="7" height="1" />
+        <rect x="2" y="5" width="5" height="1" />
+        <rect x="3" y="6" width="3" height="1" />
+        <rect x="4" y="7" width="1" height="1" />
+      </g>
+      <g class="heart-highlight">
+        <rect x="2" y="1" width="1" height="1" />
+        <rect x="1" y="2" width="1" height="1" />
+      </g>
+    </symbol>
+
+    <symbol id="icon-mic" viewBox="0 0 16 16" shape-rendering="crispEdges">
+      <rect x="6" y="2" width="4" height="6" fill="currentColor" />
+      <rect x="7" y="1" width="2" height="1" fill="currentColor" />
+      <rect x="7" y="8" width="2" height="1" fill="currentColor" />
+      <rect x="6" y="4" width="4" height="1" fill="var(--panel-light)" />
+      <rect x="6" y="6" width="4" height="1" fill="var(--panel-light)" />
+      <rect x="3" y="6" width="2" height="5" fill="currentColor" />
+      <rect x="11" y="6" width="2" height="5" fill="currentColor" />
+      <rect x="4" y="10" width="8" height="2" fill="currentColor" />
+      <rect x="7" y="12" width="2" height="2" fill="currentColor" />
+      <rect x="5" y="14" width="6" height="1" fill="currentColor" />
+    </symbol>
+
+    <symbol id="icon-mute" viewBox="0 0 16 16" shape-rendering="crispEdges">
+      <rect x="2" y="6" width="4" height="4" fill="currentColor" />
+      <rect x="6" y="5" width="2" height="6" fill="currentColor" />
+      <rect x="8" y="4" width="2" height="8" fill="currentColor" />
+      <rect x="10" y="3" width="2" height="10" fill="currentColor" />
+      <line class="mute-slash" x1="1" y1="15" x2="15" y2="1" stroke="var(--warn)" stroke-width="2" />
+    </symbol>
+
+    <symbol id="icon-pause" viewBox="0 0 16 16" shape-rendering="crispEdges">
+      <rect x="4" y="3" width="3" height="10" fill="currentColor" />
+      <rect x="9" y="3" width="3" height="10" fill="currentColor" />
+    </symbol>
+
+    <symbol id="icon-play" viewBox="0 0 16 16" shape-rendering="crispEdges">
+      <rect x="4" y="2" width="2" height="12" fill="currentColor" />
+      <rect x="6" y="3" width="2" height="10" fill="currentColor" />
+      <rect x="8" y="4" width="2" height="8" fill="currentColor" />
+      <rect x="10" y="5" width="2" height="6" fill="currentColor" />
+      <rect x="12" y="6" width="2" height="4" fill="currentColor" />
+      <rect x="14" y="7" width="2" height="2" fill="currentColor" />
+    </symbol>
+
+    <symbol id="icon-reset" viewBox="0 0 16 16" shape-rendering="crispEdges">
+      <rect x="6" y="2" width="4" height="2" fill="currentColor" />
+      <rect x="10" y="3" width="2" height="2" fill="currentColor" />
+      <rect x="11" y="5" width="2" height="4" fill="currentColor" />
+      <rect x="10" y="9" width="2" height="2" fill="currentColor" />
+      <rect x="6" y="10" width="4" height="2" fill="currentColor" />
+      <rect x="4" y="9" width="2" height="2" fill="currentColor" />
+      <rect x="3" y="5" width="2" height="4" fill="currentColor" />
+      <rect x="1" y="5" width="2" height="2" fill="currentColor" />
+      <rect x="5" y="5" width="2" height="2" fill="currentColor" />
+      <rect x="2" y="3" width="4" height="2" fill="currentColor" />
+    </symbol>
+  </svg>
+  <div class="game">
+    <div class="stage">
+      <aside class="sidebar">
+        <h1 class="title">Die Klangnüsse</h1>
+          
+          <!-- Status Section (visually omitted/hidden but kept in DOM for test suite) -->
+          <span data-testid="game-status" class="hidden">Ready</span>
+
+          <!-- Health Section (3 Hearts) -->
+          <div class="sidebar-section health-section">
+            <div class="hearts-container">
+              <div class="heart" data-heart="1">
+                <svg class="heart-icon" role="img" aria-label="Heart"><use href="#icon-heart"></use></svg>
+              </div>
+              <div class="heart" data-heart="2">
+                <svg class="heart-icon" role="img" aria-label="Heart"><use href="#icon-heart"></use></svg>
+              </div>
+              <div class="heart" data-heart="3">
+                <svg class="heart-icon" role="img" aria-label="Heart"><use href="#icon-heart"></use></svg>
+              </div>
+            </div>
+            <!-- Hidden test container for lives -->
+            <span data-testid="lives" class="hidden">3</span>
+          </div>
+
+          <!-- Level & Score Bar Section -->
+          <div class="sidebar-section progress-section">
+            <div class="level-indicator">
+              <span class="lvl-label">LVL</span>
+              <span class="lvl-val" data-testid="level">1</span>
+            </div>
+            <div class="score-indicator">
+              <span class="score-label">Nuts: </span>
+              <span class="score-val" data-testid="score-display">0</span>
+            </div>
+            <div class="score-bar-wrapper">
+              <div id="score-bar" class="score-bar">
+                <div id="level-progress" class="score-segment filled" style="width: 0%; flex: none; transition: width 0.2s linear;"></div>
+              </div>
+              <div id="height-display" class="height-display" data-testid="height-display">0m</div>
+              <span data-testid="score" class="hidden">0</span>
+              <span data-testid="nut-count" class="hidden">0</span>
+            </div>
+          </div>
+
+          <!-- Controls Section -->
+          <div class="sidebar-section controls-section">
+            <button data-testid="btn-pause" class="btn-pixel btn-pause" disabled aria-label="Pause">
+              <svg class="icon-pause" aria-hidden="true"><use href="#icon-pause"></use></svg>
+              <svg class="icon-play hidden" aria-hidden="true"><use href="#icon-play"></use></svg>
+            </button>
+            <button data-testid="btn-reset" class="btn-pixel btn-reset" aria-label="Reset">
+              <svg class="icon-reset" aria-hidden="true"><use href="#icon-reset"></use></svg>
+            </button>
+            <button data-testid="btn-mute" class="btn-pixel btn-mute" aria-label="Mute">
+              <svg class="icon-mute" aria-hidden="true"><use href="#icon-mute"></use></svg>
+            </button>
+            <button data-testid="btn-mic" class="btn-pixel btn-mic" aria-label="Microphone">
+              <svg class="icon-mic" aria-hidden="true"><use href="#icon-mic"></use></svg>
+            </button>
+          </div>
+        </aside>
+
+        <!-- Admin Commands Panel (Right Side) -->
+        <aside class="sidebar right-sidebar hidden" id="admin-panel">
+          <h2 class="title admin-title">DEV CONSOLE</h2>
+          <div class="admin-panel-content">
+            <div class="admin-section">
+              <h3 class="admin-subtitle">Cheats</h3>
+              <div class="admin-btn-grid">
+                <button id="btn-admin-god" class="btn btn-admin" title="Toggle Invincibility [Shift+I]">God Mode</button>
+                <button id="btn-admin-life" class="btn btn-admin" title="+1 Life [Shift+H]">+1 Life</button>
+                <button id="btn-admin-nuts" class="btn btn-admin" title="+100 Nuts [Shift+V]">+100 Nuts</button>
+                <button id="btn-admin-jump" class="btn btn-admin" title="Super Jump [Shift+M]">Super Jump</button>
+                <button id="btn-admin-kill" class="btn btn-admin" title="Kill Enemies [Shift+K]">Kill Mobs</button>
+                <button id="btn-admin-teleport" class="btn btn-admin" title="Teleport Up [Shift+N]">Teleport</button>
+              </div>
+            </div>
+
+            <div class="admin-section">
+              <h3 class="admin-subtitle">Spawn</h3>
+              <div class="admin-btn-grid">
+                <button id="btn-admin-spawn-heart" class="btn btn-admin" title="Spawn Heart [Shift+O]">Heart</button>
+                <button id="btn-admin-spawn-plat" class="btn btn-admin" title="Spawn Platform [Shift+S]">Platform</button>
+              </div>
+            </div>
+
+            <div class="admin-section">
+              <h3 class="admin-subtitle">World Tweaks</h3>
+              <div class="admin-slider-row">
+                <label for="admin-gravity">Gravity</label>
+                <input type="range" id="admin-gravity" min="0.1" max="2" step="0.1" value="0.5">
+                <span id="admin-gravity-val" class="slider-val">0.5</span>
+              </div>
+              <div class="admin-slider-row">
+                <label for="admin-jump-impulse">Jump Pow</label>
+                <input type="range" id="admin-jump-impulse" min="5" max="25" step="1" value="12">
+                <span id="admin-jump-impulse-val" class="slider-val">12</span>
+              </div>
+              <div class="admin-slider-row">
+                <label for="admin-speed">Tick (ms)</label>
+                <input type="range" id="admin-speed" min="8" max="32" step="1" value="16">
+                <span id="admin-speed-val" class="slider-val">16</span>
+              </div>
+            </div>
+
+            <div class="admin-section">
+              <h3 class="admin-subtitle">Debug</h3>
+              <button id="btn-admin-hitboxes" class="btn btn-admin toggle-btn active">Show Hitboxes: ON</button>
+            </div>
+          </div>
+        </aside>
+
+      <div class="canvas-container">
+        <canvas
+          id="game-canvas"
+          data-testid="game-canvas"
+          width="480"
+          height="640"
+        ></canvas>
+
+        <!-- Speedrun HUD -->
+        <div id="speedrun-hud" class="speedrun-hud">
+          <div id="timer-val">00:00.00</div>
+          <div id="split-diff" class="split-diff hidden"></div>
+        </div>
+
+        <!-- Home Screen Hub Overlay -->
+        <dialog id="home-screen" class="overlay-screen full-window" data-testid="home-screen">
+          <div class="home-panel">
+            <div class="hero-section">
+              <h1 class="home-title">Symphony<br>of the<br>Forest</h1>
+            </div>
+            
+            <div class="home-content-wrapper">
+              <div class="tab-nav">
+                <button id="btn-tab-adventure" class="btn tab-btn active">Adventure</button>
+                <button id="btn-tab-shrine" class="btn tab-btn">Shrine</button>
+                <button id="btn-tab-logbook" class="btn tab-btn">Logbook</button>
+              </div>
+            
+            <!-- Adventure Tab -->
+            <div id="content-adventure" class="tab-content">
+              <div class="control-toggle">
+                <span class="mode-label">Mode:</span>
+                <button id="btn-toggle-control" class="btn btn-mode">Voice Control</button>
+                <button id="btn-open-settings" class="btn btn-settings" aria-label="Settings">⚙️</button>
+              </div>
+              <div class="calibration-section">
+                <p>Mic Calibration</p>
+                <div class="test-tube">
+                  <div id="test-tube-knut" class="test-knut"></div>
+                </div>
+              </div>
+              <button id="btn-start-adventure" class="btn btn-start-adventure">START CLIMB</button>
+            </div>
+            
+            <!-- Shrine Tab -->
+            <div id="content-shrine" class="tab-content hidden">
+              <div class="acorn-balance">Golden Acorns: <span id="acorn-count">0</span></div>
+              <div class="upgrade-list">
+                <button class="btn btn-upgrade" data-upgrade="resonantLungs">Resonant Lungs Lvl <span class="upg-lvl" id="upg-lvl-resonantLungs">0</span></button>
+                <button class="btn btn-upgrade" data-upgrade="bellowingVoice">Bellowing Voice Lvl <span class="upg-lvl" id="upg-lvl-bellowingVoice">0</span></button>
+                <button class="btn btn-upgrade" data-upgrade="acornAttractor">Acorn Attractor Lvl <span class="upg-lvl" id="upg-lvl-acornAttractor">0</span></button>
+                <button class="btn btn-upgrade" data-upgrade="fluffyTail">Fluffy Tail Lvl <span class="upg-lvl" id="upg-lvl-fluffyTail">0</span></button>
+              </div>
+            </div>
+            
+            <!-- Logbook Tab -->
+            <div id="content-logbook" class="tab-content hidden">
+              <div class="stats-grid">
+                <div>Runs: <span id="stat-runs">0</span></div>
+                <div>Max Height: <span id="stat-height">0</span>m</div>
+                <div>Total Nuts: <span id="stat-nuts">0</span></div>
+                <div>Any% PB: <span id="stat-pb">--:--.--</span></div>
+              </div>
+              <div class="save-tools">
+                <button id="btn-export-save" class="btn save-btn">Export Save Data</button>
+                <input type="text" id="import-save-input" placeholder="Paste Base64 Save String..." />
+                <button id="btn-import-save" class="btn save-btn">Import Save Data</button>
+              </div>
+            </div>
+
+          </div>
+        </dialog>
+
+        <!-- Death Screen Overlay -->
+        <dialog id="death-screen" class="overlay-screen full-window" data-testid="death-screen">
+          <div class="death-panel">
+            <h2 class="death-title">GAME OVER</h2>
+            <div class="death-stats">
+              <div class="death-stat">Height: <span data-testid="death-height">0m</span></div>
+              <div class="death-stat">Score: <span data-testid="death-score">0</span></div>
+              <div class="death-stat">Time: <span data-testid="death-time">00:00</span></div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 400px;">
+              <button data-testid="btn-death-reset" class="btn btn-death-reset">Play Again</button>
+              <button data-testid="btn-death-home" class="btn btn-death-home" style="background: var(--panel-light); border-color: var(--accent); padding: 10px; font-size: 14px;">Return to Hub</button>
+            </div>
+          </div>
+        </dialog>
+
+        <!-- Level Up Overlay -->
+        <dialog id="level-up-screen" class="overlay-screen" data-testid="level-up-screen">
+          <div class="level-up-panel">
+            <h2 class="level-up-title">LEVEL UP!</h2>
+            <div class="level-up-subtitle">Ready for Level <span data-testid="level-up-num">2</span></div>
+          </div>
+        </dialog>
+
+        <!-- Pause Menu Overlay -->
+        <dialog id="pause-menu" class="overlay-screen">
+          <div class="overlay-panel">
+            <h2 class="death-title">PAUSED</h2>
+            <button id="btn-resume" class="btn btn-reset" style="margin-bottom: 10px;">Resume</button>
+            <button id="btn-abort" class="btn btn-reset" style="background: var(--warn);">Abort Run</button>
+          </div>
+        </dialog>
+
+        <!-- Settings Dialog -->
+        <dialog id="settings-menu" class="overlay-screen">
+          <div class="overlay-panel settings-panel">
+            <h2 class="story-title">Settings</h2>
+            <div class="settings-row"><label>Master</label><input type="range" id="set-master" min="0" max="100" value="100"></div>
+            <div class="settings-row"><label>Music</label><input type="range" id="set-music" min="0" max="100" value="80"></div>
+            <div class="settings-row"><label>SFX</label><input type="range" id="set-sfx" min="0" max="100" value="100"></div>
+            <div class="settings-row"><label>Mic Sens</label><input type="range" id="set-mic" min="0" max="100" value="50"></div>
+            <button id="btn-close-settings" class="btn btn-reset" style="margin-top: 15px; width: 100%;">Close</button>
+          </div>
+        </dialog>
+      </div>
+    </div>
+
+
+
+    <!-- Hidden state mirror: the DOM is the source of truth tests read. -->
+    <div class="state-mirror" aria-hidden="true">
+      <span data-testid="player"></span>
+      <span data-testid="nuts"></span>
+      <input
+        id="volume-slider"
+        data-testid="volume-input"
+        type="range"
+        min="0"
+        max="100"
+        value="0"
+      />
+      <div id="volume-bar"></div>
+      <span data-testid="volume-meter">0</span>
+    </div>
+  </div>
+
+
+</body>
+</html>

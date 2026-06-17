@@ -5,6 +5,8 @@ import { cfg } from './Config.js';
 import { audio } from './AudioController.js';
 import { $, setState } from './DOMUpdater.js';
 import { newGame } from './LevelGenerator.js';
+import { statsManager } from './StatsManager.js';
+import { syncDOM } from './DOMUpdater.js';
 import { physicsStep, onScore } from './PhysicsEngine.js';
 import { initRenderer, render } from './Renderer.js';
 
@@ -129,6 +131,42 @@ function init() {
     });
   }
 
+  // Bind meta-progression buttons
+  document.querySelectorAll('.btn-upgrade').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const upgradeId = e.target.closest('.btn-upgrade').dataset.upgrade;
+      if (statsManager.buyUpgrade(upgradeId)) {
+        syncDOM(); // refresh UI
+      }
+    });
+  });
+
+  const btnExport = document.getElementById("btn-export-save");
+  if (btnExport) {
+    btnExport.addEventListener("click", () => {
+      const input = document.getElementById("import-save-input");
+      if (input) input.value = statsManager.exportBase64();
+    });
+  }
+
+  const btnImport = document.getElementById("btn-import-save");
+  if (btnImport) {
+    btnImport.addEventListener("click", () => {
+      const input = document.getElementById("import-save-input");
+      if (input && input.value) {
+        if (statsManager.importBase64(input.value)) {
+          syncDOM();
+          input.value = "";
+          input.placeholder = "Import successful!";
+        } else {
+          input.value = "";
+          input.placeholder = "Invalid save string!";
+        }
+      }
+    });
+  }
+
+  statsManager.load();
   newGame();
   setState("Home");
   requestAnimationFrame(loop);

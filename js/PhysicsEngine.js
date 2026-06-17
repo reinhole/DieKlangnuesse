@@ -4,6 +4,7 @@ import { audio } from './AudioController.js';
 import { generateLevel, spawnParticles, spawnFloatingText, spawnHeartParticles } from './LevelGenerator.js';
 import { setState, syncDOM } from './DOMUpdater.js';
 import { getSurfaceY, checkAABBCentered, getPlatformLandingY } from './PhysicsUtils.js';
+import { statsManager } from './StatsManager.js';
 
 export function physicsStep() {
   if (GameState.state !== "Running") return;
@@ -103,7 +104,9 @@ export function physicsStep() {
   const isFastFalling = !GameState.player.grounded && window.Input.isCrouchHeld();
   
   let appliedGravity = c.gravity;
-  if (isGliding) appliedGravity *= 0.3;
+  const tailLvl = statsManager.state.upgrades.fluffyTail || 0;
+  
+  if (isGliding) appliedGravity *= (0.3 - (tailLvl * 0.04)); // e.g. 0.3 -> 0.10
   else if (isFastFalling) appliedGravity *= 2.5;
 
   GameState.player.vy -= appliedGravity;
@@ -234,11 +237,15 @@ export function physicsStep() {
   if (GameState.player.y < GameState.cameraY && !GameState.player.invincible) loseLife();
 
   // Nut/Heart collection.
+  const attractorLvl = statsManager.state.upgrades.acornAttractor || 0;
+  const pickupW = 22 + attractorLvl * 15;
+  const pickupH = 26 + attractorLvl * 15;
+  
   for (const nut of GameState.game.nuts) {
     if (nut.collected) continue;
     const dx = nut.x - GameState.player.x;
     const dy = nut.y - (GameState.player.y + GameState.player.h / 2);
-    if (Math.abs(dx) < 22 && Math.abs(dy) < 26) {
+    if (Math.abs(dx) < pickupW && Math.abs(dy) < pickupH) {
       nut.collected = true;
       GameState.game.score++;
       if (nut.isHeart) {
@@ -263,6 +270,8 @@ export function loseLife() {
   audio.playSFX('hurt');
   spawnParticles(GameState.player.x, GameState.player.y + GameState.player.h / 2, 15, '#b5432f');
   if (GameState.game.lives <= 0) {
+    // End of run, save stats
+    statsManager.addRunStats(Math.floor(GameState.player.y), GameState.game.score, 0); // 0 time for now, will implement speedrun timer later
     setState("Game Over");
     audio.stopBGM();
   } else {
