@@ -91,20 +91,37 @@ jobs:
           name: dist
           path: dist
 
+      # The key this uses is not a general server key. On the server it is
+      # pinned in authorized_keys to
+      #   command="/usr/bin/rrsync /opt/klartext/site/symphony",restrict
+      # so it cannot open a shell, cannot forward ports, and cannot write
+      # outside that one directory — `..` in a path is refused by rrsync. That
+      # matters because this repo has more than one person with push access,
+      # and the box also runs a live business site and the analytics instance.
+      #
+      # Consequence for the paths below: the remote root IS the symphony
+      # directory, so the destination is `:/`, not the absolute path.
+      - name: Install deploy key
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.SERVER_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
       # Static files only. Caddy's file_server reads them off disk, so unlike
       # the klartext deploy there is deliberately no `docker compose restart
       # caddy` here — that Caddy also fronts a live business site, and there is
-      # no reason for a game deploy to touch it.
+      # no reason for a game deploy to touch it. (The restricted key could not
+      # run that command anyway.)
       - name: Upload to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "dist/*"
-          target: "/opt/klartext/site/symphony"
-          strip_components: 1
-          rm: true
+        run: |
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes" \
+            dist/ "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/"
+
+      - name: Shred the key
+        if: always()
+        run: shred -u ~/.ssh/deploy_key 2>/dev/null || rm -f ~/.ssh/deploy_key
 
       - name: Smoke-test the live site
         run: |
