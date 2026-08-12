@@ -149,4 +149,19 @@ npm run dev
 
 #### Assets
 
-Für grafische Assets könnt ihr die freien Assets von https://kenney.nl/ verwenden. Diese Lösung nutzt stattdessen prozedural gezeichnete Pixel-Grafik im Canvas, ergänzt durch SVG-Icons für das UI.
+Die Grafik stammt aus den freien Pixel-Art-Paketen **SunnyLand** und **SunnyLand
+Fort of Illusion** von [ansimuz](https://ansimuz.itch.io/sunny-land-pixel-game-art),
+ergänzt durch eigene SVG-Icons für das UI. Die Sounds kommen aus demselben Paket.
+
+(Eine frühere Fassung dieses Abschnitts behauptete, die Grafik sei prozedural im
+Canvas gezeichnet. Das stimmt nicht — gezeichnet wird prozedural nur das Layout
+der Welt, nicht die Sprites.)
+
+## Lizenz
+
+Der Code steht unter der MIT-Lizenz, siehe [`LICENSE`](LICENSE).
+
+Die Assets unter `public/assets/` gehören nicht dazu: Sie stehen unter den
+Bedingungen der jeweiligen Pakete. Herkunft und Lizenzlage sind in
+[`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md) aufgeschlüsselt — inklusive
+des Hinweises, dass die Hintergrundmusik gesondert zu prüfen ist.
