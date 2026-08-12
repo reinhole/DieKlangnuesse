@@ -39,6 +39,19 @@ music carved out. **Confirm the music terms directly with the pack page before
 shipping this anywhere commercial**, or swap the track for one whose licence is
 unambiguous.
 
+## Fonts
+
+`public/fonts/press-start-2p-latin.woff2` and `press-start-2p-latin-ext.woff2`
+are **Press Start 2P** by CodeMan38, licensed under the
+[SIL Open Font License 1.1](https://openfontlicense.org/) — source:
+https://fonts.google.com/specimen/Press+Start+2P
+
+The font is vendored rather than loaded from `fonts.googleapis.com` on purpose.
+The hosted stylesheet makes every visitor's browser contact Google and hand over
+its IP address, which is a third-party transfer this project's deployment does
+not want to make. Serving the woff2 from our own origin keeps the request count
+lower *and* keeps the privacy claim on the deploying domain true.
+
 ## SVG icons
 
 `public/svgs/` (heart, mic, mute, pause, play, reset, sprite) are part of this

@@ -20,7 +20,7 @@ async function boot(page, { seed = 1234, config = {} } = {}) {
     { seed, config }
   );
   await page.goto('/');
-  await page.locator('#btn-start-story').click();
+  await page.locator('#btn-start-adventure').click();
   await expect(page.getByTestId('game-status')).toHaveText('Running');
 }
 
@@ -33,7 +33,7 @@ const playerY = async (page) =>
 test('loads in Running with pause enabled', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByTestId('game-status')).toHaveText('Story');
-  await page.locator('#btn-start-story').click();
+  await page.locator('#btn-start-adventure').click();
   await expect(page.getByTestId('game-status')).toHaveText('Running');
   await expect(page.getByTestId('btn-pause')).toBeEnabled();
   await expect(page.getByTestId('score')).toHaveText('0');
@@ -127,7 +127,7 @@ test('the live (real-time) loop drives physics without __step', async ({ page })
     window.__initialSeed = 99;
   });
   await page.goto('/');
-  await page.locator('#btn-start-story').click();
+  await page.locator('#btn-start-adventure').click();
   await expect(page.getByTestId('game-status')).toHaveText('Running');
 
   const before = await playerY(page);
