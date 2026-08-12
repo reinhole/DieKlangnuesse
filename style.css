@@ -1085,7 +1085,9 @@ dialog#level-up-screen[open] {
    point of crediting anyone. Bottom-right is the one corner no game UI claims
    (the sidebar is top-left, panels are centred). pointer-events is off on the
    container so it can never eat a click meant for the game; the links opt back
-   in. Hidden while a modal panel is open, and on short viewports. */
+   in. On short/landscape viewports it shrinks rather than hides — a phone is
+   exactly where someone arrives at the bare game from a shared link, so that is
+   where the credit is most needed, not least. */
 .site-credit {
   position: fixed;
   right: 10px;
@@ -1107,6 +1109,12 @@ dialog#level-up-screen[open] {
   color: var(--accent);
   pointer-events: auto;
 }
-@media (max-height: 520px) {
-  .site-credit { display: none; }
+@media (max-height: 520px), (max-width: 600px) {
+  .site-credit {
+    font-size: 6px;
+    line-height: 1.7;
+    max-width: 24ch;
+    right: 6px;
+    bottom: 4px;
+  }
 }
