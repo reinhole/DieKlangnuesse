@@ -1,0 +1,101 @@
+name: Test and deploy
+
+# The test suite is the point of this project — an input device that cannot be
+# scripted is only testable because of the window hooks in tests/game.spec.js.
+# Those specs went fully red at one point without anyone noticing, because
+# nothing ran them. This workflow is what stops that happening again: no build
+# reaches symphony.olereinhold.com unless all 19 pass first.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# A second push while a deploy is mid-flight would race two rsyncs into the
+# same directory. Queue instead, and never cancel a run that is already
+# uploading.
+concurrency:
+  group: deploy-symphony
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24 # package.json engines: >=24 (Vite 8)
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E specs
+        run: npx playwright test
+
+      - name: Build
+        run: npx vite build
+
+      - name: Fail if the build reaches out to a third party
+        # The game is served from a domain whose privacy policy states that no
+        # visitor data goes to a third party, and that there is no consent
+        # banner. A stray Google Fonts <link> would quietly make both false, so
+        # it fails the build rather than shipping.
+        run: |
+          if grep -rEq 'fonts\.(googleapis|gstatic)\.com' dist/; then
+            echo "::error::dist/ references Google Fonts — the font must stay self-hosted (see THIRD-PARTY-NOTICES.md)"
+            grep -rE 'fonts\.(googleapis|gstatic)\.com' dist/ || true
+            exit 1
+          fi
+          echo "No third-party font hosts in dist/ — good."
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      # Static files only. Caddy's file_server reads them off disk, so unlike
+      # the klartext deploy there is deliberately no `docker compose restart
+      # caddy` here — that Caddy also fronts a live business site, and there is
+      # no reason for a game deploy to touch it.
+      - name: Upload to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "dist/*"
+          target: "/opt/klartext/site/symphony"
+          strip_components: 1
+          rm: true
+
+      - name: Smoke-test the live site
+        run: |
+          set -e
+          for i in $(seq 1 10); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' https://symphony.olereinhold.com/ || true)
+            [ "$code" = "200" ] && break
+            echo "attempt $i: got $code, retrying"; sleep 6
+          done
+          [ "$code" = "200" ] || { echo "::error::site did not return 200 (last: $code)"; exit 1; }
+          curl -sf https://symphony.olereinhold.com/ | grep -q 'btn-start-adventure' \
+            || { echo "::error::page served but the start button is missing"; exit 1; }
+          echo "Live and serving the game."
