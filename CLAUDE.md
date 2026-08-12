@@ -54,10 +54,21 @@ the test tooling.
 3. **All randomness goes through `window.__rng`** (world generation in
    `generateLevel`). Never call `Math.random()` in game logic.
 4. **All timing/physics tunables live in `window.__config`** (see `DEFAULTS` in
-   `game.js`). Tests override these; don't hard-code delays.
-5. **`data-testid` values are a stable contract.** Renaming/removing one means
-   updating `tests/game.spec.js` in the same change. CSS classes and `id`s may
-   change freely.
+   `js/Config.js`). Tests override these; don't hard-code delays.
+5. **`data-testid` values are a stable contract**, and so are the two `id`s the
+   specs drive the game through: **`#btn-start-adventure`** and
+   **`#btn-resume`**. Renaming or removing any of them means updating
+   `tests/game.spec.js` in the same change.
+
+   This rule used to end "CSS classes and `id`s may change freely", and that
+   sentence cost the project its entire test suite. The hub refactor renamed
+   `#btn-start-story` to `#btn-start-adventure` — permitted by the old rule —
+   and since every spec boots through that button, all 19 failed at once and
+   stayed failing until someone ran them weeks later. Everything *else* about a
+   CSS class or `id` really is free to change; these two are not.
+
+   `grep -o "locator('#[a-z-]*')" tests/game.spec.js | sort -u` lists the
+   current set, if you would rather check than trust this paragraph.
 6. **Commit messages MUST follow the Conventional Commits specification.** All
    commits (from both humans and agents) must use standard conventional commit
    prefixes (e.g., `feat:`, `fix:`, `docs:`, `style:`, `refactor:`, `test:`, `chore:`).

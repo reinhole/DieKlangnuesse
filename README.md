@@ -71,9 +71,10 @@ npm test
 
 | Datei | Inhalt |
 | --- | --- |
-| [`CLAUDE.md`](CLAUDE.md) | Projekt-Guide + Engine-Invarianten (für Menschen **und** Agenten). |
-| [`../CLAUDE.md`](../CLAUDE.md) | Bindender DOM-Test-Contract (`data-testid`s, Status-Werte, seedbarer Zufall). |
+| [`CLAUDE.md`](CLAUDE.md) | Projekt-Guide + Engine-Invarianten (für Menschen **und** Agenten). Enthält auch den bindenden DOM-Test-Contract. |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Engine-Interna: Koordinaten, Kamera, Audio, Asset-Pipeline. |
+| [`docs/decisions.md`](docs/decisions.md) | Entscheidungen und ihre Begründungen. |
+| [`ISSUES.md`](ISSUES.md) | Roadmap, gegen den Code auditiert (Stand 2026-08-12). |
 
 ```bash
 npm run check   # schneller, abhängigkeitsfreier Check des DOM-Contracts (data-testids)
@@ -87,7 +88,70 @@ der die `window.__*`-Test-Hooks kennt.
 
 ---
 
-### Wettbewerbs-Lösung
+## Deployment
+
+Das Spiel läuft live unter **https://symphony.olereinhold.com**.
+
+Jeder Push auf `main` löst `.github/workflows/deploy.yml` aus. Der Ablauf:
+
+1. Playwright-Suite (19 Specs) — **schlägt sie fehl, wird nichts deployed**
+2. `vite build`
+3. zwei Guards (siehe unten)
+4. `rsync` des `dist/`-Ordners auf den Server
+
+Caddy liefert die Dateien statisch von der Platte aus; es wird bewusst **kein**
+Neustart eines Dienstes ausgelöst, weil derselbe Caddy auch andere Seiten
+ausliefert.
+
+### Zwei Guards, die den Build brechen dürfen
+
+Die Domain, unter der das Spiel läuft, hat eine Datenschutzerklärung, die
+zusagt, dass **keine Besucherdaten an Dritte gehen** und dass deshalb kein
+Consent-Banner nötig ist. Zwei CI-Schritte halten das aufrecht, damit es nicht
+von Erinnerungsvermögen abhängt:
+
+- **Keine Third-Party-Fonts.** `index.html` lud Press Start 2P ursprünglich von
+  `fonts.googleapis.com` — das hätte die IP jedes Besuchers an Google gegeben
+  und die Zusage gebrochen. Die Schrift liegt jetzt unter `public/fonts/`
+  (OFL, siehe `THIRD-PARTY-NOTICES.md`). Der Guard bricht ab, wenn im Build
+  wieder ein Fremd-Font-Host als Ressource auftaucht.
+- **Die Schrift muss auch wirklich mitgeliefert werden.** Der Gegen-Check: zu
+  beweisen, dass wir nicht bei Google laden, ist wertlos, wenn wir gleichzeitig
+  vergessen haben, die eigene Kopie auszuliefern — das fiele still auf Courier
+  zurück und käme trotzdem durch.
+
+### Deploy-Key
+
+Der SSH-Key in den Repo-Secrets ist **kein** allgemeiner Server-Key. Er ist auf
+dem Server festgenagelt auf:
+
+```
+command="/usr/bin/rrsync /opt/klartext/site/symphony",restrict
+```
+
+Damit kann er ausschließlich in dieses eine Verzeichnis schreiben: keine Shell,
+kein Port-Forwarding, kein Pfad mit `..`. Das ist bewusst so, weil hier mehrere
+Leute pushen können und ein Workflow-Secret jedem zur Verfügung steht, der einen
+Workflow ändern darf.
+
+> **Wer das von Hand testen will:** auf macOS ist `/usr/bin/rsync` in Wahrheit
+> `openrsync`. Es schickt `--dirs` als Long-Option, die `rrsync` ablehnt — ein
+> lokaler Test schlägt dadurch irreführend fehl. Mit rsync 3.x
+> (`brew install rsync`) funktioniert es; das ist auch, was Runner und Server
+> verwenden.
+
+---
+
+### Wettbewerbs-Lösung (historisch)
+
+> Dieser Abschnitt beschreibt den Workshop, in dem das Projekt entstanden ist
+> (Hackathon x GameJam, Juni 2026, veranstaltet von Claudius Proißl). Die dort
+> genannte Gitea-Instanz und die Subdomain
+> `die-klangn-sse.workshop.heyclever.net` waren die Workshop-Umgebung — sie sind
+> **nicht** der aktuelle Deployment-Weg. Der steht oben. Der Abschnitt bleibt
+> stehen, weil er erklärt, warum das Repo aufgebaut ist, wie es aufgebaut ist:
+> `server.js` als Pflicht-Einstiegspunkt und `process.env.PORT` sind
+> Workshop-Vorgaben, keine freien Entscheidungen.
 
 Meldet euch zuerst in der Workshop-App an und öffnet euer Profil. Dort findet ihr euren persönlichen Gitea-Benutzernamen und das Initialpasswort.
 
@@ -102,10 +166,10 @@ Gitea-Login: https://gitea.heyclever.net
 
 #### Deployment
 
-Jeder Push auf den `main`-Branch löst ein automatisches Deployment aus.
-
-Eure App ist anschließend erreichbar unter:
-**https://die-klangn-sse.workshop.heyclever.net**
+*(Damals:)* Jeder Push auf den `main`-Branch löste ein automatisches Deployment
+aus, und die App war erreichbar unter
+`https://die-klangn-sse.workshop.heyclever.net`. Heute deployt derselbe Push
+nach `symphony.olereinhold.com` — siehe **Deployment** oben.
 
 #### Einstieg für den Kreativ-Track
 
