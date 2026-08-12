@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Guards the binding DOM-testability contract from ../CLAUDE.md without running
+// Guards the binding DOM-testability contract from CLAUDE.md without running
 // the full Playwright suite. Cheap enough (pure string scan, zero deps) to run
 // from a Claude Code hook after every edit to index.html.
 //
@@ -17,9 +17,13 @@ const args = process.argv.slice(2).filter((a) => a !== '--quiet');
 const quiet = process.argv.includes('--quiet'); // suppress success line (for hooks)
 const file = args[0] || path.join(__dirname, '..', 'index.html');
 
-// data-testids the spec (../CLAUDE.md) and the test suite depend on. The Start
-// button is intentionally absent — this game auto-starts into "Running" (see
-// the "removed start" commit); Pause/Reset remain the clickable controls.
+// data-testids the spec (CLAUDE.md) and the test suite depend on.
+//
+// There is no `btn-start` testid because the run is started from the hub, by
+// clicking #btn-start-adventure. That id and #btn-resume are part of the
+// contract even though they are ids rather than testids — the specs drive the
+// game through them, and renaming #btn-start-story once broke all 19 at a
+// stroke. See rule 5 in CLAUDE.md.
 const REQUIRED_TESTIDS = [
   'game-status',          // state machine mirror
   'score', 'lives', 'level',
@@ -62,14 +66,14 @@ function main() {
   if (problems.length) {
     console.error(`check-contract: ${path.relative(process.cwd(), file)} FAILED`);
     for (const p of problems) console.error(`  - ${p}`);
-    console.error('See ../CLAUDE.md (DOM testability contract).');
+    console.error('See CLAUDE.md (DOM testability contract).');
     process.exit(1);
   }
 
   if (!quiet) {
     console.log(`check-contract: ${REQUIRED_TESTIDS.length} required data-testid hooks present and unique.`);
-    console.log('  note: this build intentionally has no btn-start (auto-starts into Running);');
-    console.log('  ../CLAUDE.md lists Start as required, so this is a known, deliberate deviation.');
+    console.log('  note: no btn-start testid — a run is started from the hub via');
+    console.log('  #btn-start-adventure, which the specs depend on (CLAUDE.md rule 5).');
   }
 }
 
