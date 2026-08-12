@@ -3,12 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Die Klangnüsse</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/index-BL5wlqbq.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-D1lSxC08.css">
+  <title>Symphony of the Forest (Die Klangnüsse)</title>
+  <!-- Press Start 2P is served from this origin, not fonts.googleapis.com. The
+       hosted version would hand every visitor's IP to a third party, which the
+       privacy policy of the domain this is deployed under says does not happen.
+       Font files live in public/fonts/; licence in THIRD-PARTY-NOTICES.md. -->
+  <!-- Privacy-friendly analytics by Plausible -->
+  <script async src="https://analytics.klartext-tools.com/js/pa-FxfE0LQlBd8ynXGBszC6C.js"></script>
+  <script>
+    window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+    plausible.init()
+  </script>
+  <script type="module" crossorigin src="/assets/index-BrsOgl8b.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-Ggtz1gxg.css">
 </head>
 <body>
   <!-- Inline SVG Sprite for CSS Variable Support -->
@@ -329,6 +336,19 @@
       <span data-testid="volume-meter">0</span>
     </div>
   </div>
+
+  <!-- Someone who lands here directly sees only the game. Without this they would
+       reasonably read it as one person's work; it is three people's. -->
+  <footer class="site-credit">
+    <p>
+      <strong>Die Klangnüsse</strong> — built by
+      <a href="https://olereinhold.com" rel="author">Ole Reinhold</a> and Jeremy Huering,
+      at a workshop hosted by Claudius Proißl.
+      <a href="https://github.com/reinhole/DieKlangnuesse">Source on GitHub</a>.
+      Art and audio by <a href="https://ansimuz.itch.io/sunny-land-pixel-game-art">ansimuz</a>.
+    </p>
+    <p>Playable without a microphone — use the on-screen volume slider.</p>
+  </footer>
 
 
 </body>

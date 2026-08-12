@@ -20,7 +20,7 @@ async function boot(page, { seed = 1234, config = {} } = {}) {
     { seed, config }
   );
   await page.goto('/');
-  await page.locator('#btn-start-story').click();
+  await page.locator('#btn-start-adventure').click();
   await expect(page.getByTestId('game-status')).toHaveText('Running');
 }
 
@@ -32,8 +32,8 @@ const playerY = async (page) =>
 
 test('loads in Running with pause enabled', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByTestId('game-status')).toHaveText('Story');
-  await page.locator('#btn-start-story').click();
+  await expect(page.getByTestId('game-status')).toHaveText('Home');
+  await page.locator('#btn-start-adventure').click();
   await expect(page.getByTestId('game-status')).toHaveText('Running');
   await expect(page.getByTestId('btn-pause')).toBeEnabled();
   await expect(page.getByTestId('score')).toHaveText('0');
@@ -50,7 +50,9 @@ test('Pause and resume toggle the status', async ({ page }) => {
   await boot(page);
   await page.getByTestId('btn-pause').click();
   await expect(page.getByTestId('game-status')).toHaveText('Paused');
-  await page.getByTestId('btn-pause').click();
+  // Pausing opens the #pause-menu dialog, which covers the pause button — so
+  // resuming goes through the menu, not through a second click on the button.
+  await page.locator('#btn-resume').click();
   await expect(page.getByTestId('game-status')).toHaveText('Running');
 });
 
@@ -127,7 +129,7 @@ test('the live (real-time) loop drives physics without __step', async ({ page })
     window.__initialSeed = 99;
   });
   await page.goto('/');
-  await page.locator('#btn-start-story').click();
+  await page.locator('#btn-start-adventure').click();
   await expect(page.getByTestId('game-status')).toHaveText('Running');
 
   const before = await playerY(page);
@@ -245,8 +247,11 @@ test('death screen is displayed on game over with stats and a functional reset b
   
   // Death screen should be visible
   await expect(page.getByTestId('death-screen')).toHaveJSProperty('open', true);
+  // The panel reports height and time, not level — that was a deliberate
+  // redesign, so the spec follows it rather than the other way round.
   await expect(page.getByTestId('death-score')).toHaveText('0');
-  await expect(page.getByTestId('death-level')).toHaveText('1');
+  await expect(page.getByTestId('death-height')).toBeVisible();
+  await expect(page.getByTestId('death-time')).toBeVisible();
 
   // Click the reset button inside the death screen
   await page.getByTestId('btn-death-reset').click();
